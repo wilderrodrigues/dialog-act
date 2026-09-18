@@ -13,7 +13,7 @@ pyenv global 3.13.15 # or local, if you do not want to mess with your environmen
 poetry env use "$(pyenv which python)"
 poetry install
 ```
-0612319560
+
 Run these commands from the project directory; `.python-version` selects the
 project interpreter. Poetry creates the environment in `.venv`. No global
 Python selection is required. Commit `poetry.lock` with the project.
