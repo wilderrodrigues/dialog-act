@@ -1,0 +1,10 @@
+inform im looking for a moderately priced restaurant that serves
+inform any part of town
+affirm yes
+request could i get their phone number
+reqalts is there anything else
+request could i have their phone number and the type of food
+request type of food
+thankyou thank you good bye
+inform expensive restaurant
+affirm yes

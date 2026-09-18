@@ -1,0 +1,36 @@
+[project]
+name = "dialog"
+version = "0.1.0"
+description = "Dialog system developed for the Methods in AI Research course."
+authors = [{name = "Dexter"}, {name = "Jiacheng"}, {name = "Remy"}, {name = "Wilder"}]
+readme = "README.md"
+requires-python = ">=3.13.15,<3.14"
+dependencies = [
+    "numpy",
+    "torch",
+    "tokenizers",
+    "numpy",
+    "typer",
+    "pandas",
+    "matplotlib",
+    "seaborn",
+    "scikit-learn",
+    "shap",
+]
+
+[project.scripts]
+dialog-acts = "uu.msc.ai.mair.dialog.cli:app"
+
+[tool.poetry]
+packages = [{include = "uu", from = "src"}]
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=9.0,<10.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[build-system]
+requires = ["poetry-core>=2.1,<3.0"]
+build-backend = "poetry.core.masonry.api"
