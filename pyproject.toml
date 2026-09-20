@@ -28,7 +28,7 @@ packages = [{include = "uu", from = "src"}]
 pytest = ">=9.0,<10.0"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["test"]
 addopts = "-ra"
 
 [build-system]

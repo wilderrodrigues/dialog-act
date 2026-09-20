@@ -7,6 +7,9 @@ from torch.utils.data import DataLoader
 from uu.msc.ai.mair.dialog.core.datasets import DialogActsDataset, DatasetFactory
 from uu.msc.ai.mair.dialog.core.engine import train_loop
 from uu.msc.ai.mair.dialog.core.runtime import DeviceChoice, seed_everything, select_device
+from uu.msc.ai.mair.dialog.core.splits import DEFAULT_DATA_PATH, RANDOM_SEED, SPLIT_NAMES, get_split
+from uu.msc.ai.mair.dialog.metrics.evaluation import most_common_errors, print_evaluation
+from uu.msc.ai.mair.dialog.model import baseline
 from uu.msc.ai.mair.dialog.model.classifier import Conv1DClassifier
 
 from typing import Annotated
@@ -55,3 +58,39 @@ def train(
 @app.command(name="eval", help="Evaluate a model.")
 def evaluate() -> None:
     logging.info("This command is under development.")
+
+
+@app.command(name="baseline", help="Evaluate the rule-based keyword baseline.")
+def run_baseline(
+    dataset_path: Annotated[Path, typer.Argument(help="Path to the dataset")] = DEFAULT_DATA_PATH,
+    split: Annotated[str, typer.Option(help="Split to evaluate: original, grouped or both.")] = "both",
+    errors: Annotated[int, typer.Option(min=0, help="Number of most frequent test errors to print.")] = 0,
+    seed: Annotated[int, typer.Option(min=0, help="Random seed for the split.")] = RANDOM_SEED,
+) -> None:
+    split_names = SPLIT_NAMES if split == "both" else (split,)
+    for split_name in split_names:
+        x_train, x_test, y_train, y_test = get_split(split_name, dataset_path, seed)
+        print_evaluation(y_train, baseline.predict(x_train),
+                         f"baseline / {split_name} / train", show_report=False)
+        print()
+        y_pred = baseline.predict(x_test)
+        print_evaluation(y_test, y_pred, f"baseline / {split_name} / test")
+        if errors > 0:
+            print()
+            print("most frequent test errors (count  utterance | true -> predicted):")
+            for (utterance, true, pred), count in most_common_errors(x_test, y_test, y_pred, errors):
+                print(f"{count:>4}  {utterance!r} | {true} -> {pred}")
+        print()
+
+
+@app.command(name="predict", help="Classify utterances typed at a prompt until 'exit'.")
+def predict_prompt() -> None:
+    print("Type an utterance to classify it (empty line or 'exit' to quit).")
+    while True:
+        try:
+            utterance = input("> ")
+        except (EOFError, KeyboardInterrupt):
+            break
+        if utterance.strip().lower() in ("", "exit", "quit"):
+            break
+        print(baseline.predict_one(utterance))
