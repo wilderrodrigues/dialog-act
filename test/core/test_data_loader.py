@@ -38,13 +38,11 @@ def test_targets_map() -> None:
 def test_load_and_split_dataset() -> None:
     dataset_file = get_root() / "test" / "resources" / "test_acts.dat"
 
-    train, val, test, targets = DatasetFactory.load_and_split_dataset(data_path=dataset_file, splits=(.5, .4))
+    train, test, targets = DatasetFactory.load_and_split_dataset(data_path=dataset_file, split=.5)
     assert train is not None
     assert test is not None
-    assert val is not None
     assert train.shape == (5, 2)
-    assert val.shape == (3, 2)
-    assert test.shape == (2, 2)
+    assert test.shape == (5, 2)
 
 def test_build_vocabulary() -> None:
     dataset_file = get_root() / "test" / "resources" / "test_acts.dat"
@@ -63,37 +61,26 @@ def test_dataset() -> None:
     assert dialog_df is not None
     assert dialog_df.shape == (10, 2)
 
-    train, val, test, targets = DatasetFactory.load_and_split_dataset(data_path=dataset_file, splits=(.5, .4))
+    train, test, targets = DatasetFactory.load_and_split_dataset(data_path=dataset_file, split=.5)
     vocab = DatasetFactory.train_tokenizer(dialog_df)
     assert vocab is not None
 
     train_dataset = DialogActsDataset(vocab=vocab, dataframe=train, targets=targets)
-    val_dataset = DialogActsDataset(vocab=vocab, dataframe=val, targets=targets)
     test_dataset = DialogActsDataset(vocab=vocab, dataframe=test, targets=targets)
     assert train_dataset is not None
-    assert val_dataset is not None
     assert test_dataset is not None
 
     assert len(train_dataset) == 5
-    assert len(val_dataset) == 3
-    assert len(test_dataset) == 2
+    assert len(test_dataset) == 5
 
     train_dataloader = DataLoader(train_dataset, batch_size=2, shuffle=True)
-    val_dataloader = DataLoader(val_dataset, batch_size=2, shuffle=True)
     test_dataloader = DataLoader(test_dataset, batch_size=2, shuffle=True)
 
     train_features, train_labels = next(iter(train_dataloader))
     assert train_features is not None
     assert train_labels is not None
-
     assert train_features.shape == (2, 50)
     assert train_labels.shape == (2, 5)
-
-    val_features, val_labels = next(iter(val_dataloader))
-    assert val_features is not None
-    assert val_labels is not None
-    assert val_features.shape == (2, 50)
-    assert val_labels.shape == (2, 5)
 
     test_features, test_labels = next(iter(test_dataloader))
     assert test_features is not None

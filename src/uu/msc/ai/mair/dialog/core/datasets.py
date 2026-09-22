@@ -38,8 +38,8 @@ class DatasetFactory:
 
     @staticmethod
     def load_and_split_dataset(data_path: Path, separator: str = " ",
-                               splits: tuple[float, float] = (0.2, 0.3),
-                               shuffle: bool = True) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, int]]:
+                               split: float = 0.15,
+                               shuffle: bool = True) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, int]]:
         dialog_df = DatasetFactory.load_dataframe(data_path, separator)
         rows = dialog_df[dialog_df["utterance"] == "noise"].index
         dialog_df.drop(rows, inplace=True)
@@ -49,9 +49,8 @@ class DatasetFactory:
         if shuffle:
             dialog_df = dialog_df.sample(frac=1.0).reset_index(drop=True)
 
-        train_dataset, val_dataset = train_test_split(dialog_df, test_size=splits[0])
-        val_dataset, test_dataset = train_test_split(val_dataset, test_size=splits[1])
-        return train_dataset, val_dataset, test_dataset, targets
+        train_dataset, val_dataset = train_test_split(dialog_df, test_size=split)
+        return train_dataset, val_dataset, targets
 
     @staticmethod
     def train_tokenizer(dataset: pd.DataFrame) -> dict[str, int]:
