@@ -34,6 +34,7 @@ def train_loop(model: torch.nn.Module, loss_fn: torch.nn.Module, optimizer: torc
     for i in range(1, epochs+1):
         losses = []
         for utterances, acts in tqdm(train_loader):
+            model.train()
             utterances = utterances.to(device)
             acts = acts.to(device)
             acts_pred = model(utterances)
@@ -46,4 +47,5 @@ def train_loop(model: torch.nn.Module, loss_fn: torch.nn.Module, optimizer: torc
             optimizer.step()
 
         logging.info(f"Train Loss : {torch.tensor(losses).mean():.3f}")
+        model.eval()
         calculate_loss_accuracy(model, loss_fn, val_loader, device, "Validation")

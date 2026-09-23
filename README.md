@@ -30,7 +30,7 @@ poetry run pytest
 The simplest way to train the model is to run:
 
 ```sh
-poetry run dialog-acts train ./data/dialog_acts.dat
+poetry run dialog-acts train-nn ./data/dialog_acts.dat
 ```
 
 Other parameters can be passed to the script. For example, one can decide to use a grouped split instead of a random one.
