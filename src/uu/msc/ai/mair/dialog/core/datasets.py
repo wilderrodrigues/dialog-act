@@ -13,6 +13,10 @@ import torch.nn.functional as F
 
 
 class DatasetFactory:
+
+    VAL_SPLIT: int = 0.15
+    SEED: int = 42
+
     tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
     tokenizer.pre_tokenizer = Whitespace()
 
@@ -37,9 +41,10 @@ class DatasetFactory:
         return targets_map
 
     @staticmethod
-    def load_and_split_dataset(data_path: Path, separator: str = " ",
-                               split: float = 0.15,
-                               shuffle: bool = True) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, int]]:
+    def load_and_split_vanilla(data_path: Path, separator: str = " ",
+                               split: float = VAL_SPLIT,
+                               shuffle: bool = True,
+                               seed: int = SEED) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, int]]:
         dialog_df = DatasetFactory.load_dataframe(data_path, separator)
         rows = dialog_df[dialog_df["utterance"] == "noise"].index
         dialog_df.drop(rows, inplace=True)
@@ -49,7 +54,7 @@ class DatasetFactory:
         if shuffle:
             dialog_df = dialog_df.sample(frac=1.0).reset_index(drop=True)
 
-        train_dataset, val_dataset = train_test_split(dialog_df, test_size=split)
+        train_dataset, val_dataset = train_test_split(dialog_df, test_size=split, random_state=seed)
         return train_dataset, val_dataset, targets
 
     @staticmethod

@@ -38,7 +38,7 @@ def test_targets_map() -> None:
 def test_load_and_split_dataset() -> None:
     dataset_file = get_root() / "test" / "resources" / "test_acts.dat"
 
-    train, test, targets = DatasetFactory.load_and_split_dataset(data_path=dataset_file, split=.5)
+    train, test, targets = DatasetFactory.load_and_split_vanilla(data_path=dataset_file, split=.5)
     assert train is not None
     assert test is not None
     assert train.shape == (5, 2)
@@ -61,7 +61,7 @@ def test_dataset() -> None:
     assert dialog_df is not None
     assert dialog_df.shape == (10, 2)
 
-    train, test, targets = DatasetFactory.load_and_split_dataset(data_path=dataset_file, split=.5)
+    train, test, targets = DatasetFactory.load_and_split_vanilla(data_path=dataset_file, split=.5)
     vocab = DatasetFactory.train_tokenizer(dialog_df)
     assert vocab is not None
 

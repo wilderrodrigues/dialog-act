@@ -29,8 +29,7 @@ def calculate_loss_accuracy(model: torch.nn.Module, loss_fn: torch.nn.Module,
 
 
 def train_loop(model: torch.nn.Module, loss_fn: torch.nn.Module, optimizer: torch.optim.Optimizer,
-               train_loader: DataLoader, val_loader: DataLoader, test_loader: DataLoader,
-               epochs: int, device: torch.device):
+               train_loader: DataLoader, val_loader: DataLoader, epochs: int, device: torch.device):
     model.to(device)
     for i in range(1, epochs+1):
         losses = []
