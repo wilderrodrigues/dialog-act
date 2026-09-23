@@ -42,6 +42,10 @@ To see all options, please run:
 poetry run dialog-acts train-nn --help
 ```
 
+## Model checkpoints
+
+The best model is saved under `ouput/best_model_epoch_N_YYYYMMD.pt`.
+
 # Frozen pretrained embeddings
 
 `core.embeddings.FrozenDistilBertEncoder` turns utterances into features with a
