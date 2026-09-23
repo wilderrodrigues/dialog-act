@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 
 from uu import get_root
 from uu.msc.ai.mair.dialog.core.datasets import DialogActsDataset, DatasetFactory
+from uu.msc.ai.mair.dialog.core.encoders import SimpleEncoder
 
 random.seed(DatasetFactory.SEED)
 torch.manual_seed(DatasetFactory.SEED)
@@ -55,16 +56,6 @@ def test_load_and_split_grouped() -> None:
     assert utterances_train.shape == (10,)
     assert utterances_val.shape == (8,)
 
-def test_build_vocabulary() -> None:
-    dataset_file = get_root() / "test" / "resources" / "test_acts.dat"
-
-    dialog_df = DatasetFactory.load_dataframe(dataset_file, separator=" ")
-    vocab = DatasetFactory.train_tokenizer(dialog_df)
-    assert vocab is not None
-    tokens_idx = [vocab[token] for token in DatasetFactory.tokenizer.encode("moderately priced").tokens]
-    assert len(tokens_idx) == 2
-    assert tokens_idx[0] == 35
-    assert tokens_idx[1] == 38
 
 def test_dataset() -> None:
     dataset_file = get_root() / "test" / "resources" / "test_acts.dat"
@@ -74,11 +65,14 @@ def test_dataset() -> None:
 
     utterances_train, utterances_val, acts_train, acts_val, targets = (
         DatasetFactory.load_and_split_vanilla(data_path=dataset_file, split=.5))
-    vocab = DatasetFactory.train_tokenizer(dialog_df)
-    assert vocab is not None
 
-    train_dataset = DialogActsDataset(vocab=vocab, utterances=utterances_train, acts=acts_train, targets=targets)
-    val_dataset = DialogActsDataset(vocab=vocab, utterances=utterances_val, acts=acts_val, targets=targets)
+    encoder = SimpleEncoder()
+    encoder.init_tokenizer(dialog_df)
+    assert encoder.get_tokenizer() is not None
+    assert encoder.get_vocabulary() is not None
+
+    train_dataset = DialogActsDataset(encoder=encoder, utterances=utterances_train, acts=acts_train, targets=targets)
+    val_dataset = DialogActsDataset(encoder=encoder, utterances=utterances_val, acts=acts_val, targets=targets)
     assert train_dataset is not None
     assert val_dataset is not None
 

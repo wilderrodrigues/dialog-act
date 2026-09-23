@@ -16,6 +16,7 @@ dependencies = [
     "seaborn",
     "scikit-learn",
     "shap",
+    "transformers"
 ]
 
 [project.scripts]

@@ -1,5 +1,4 @@
 import numpy.typing as npt
-import numpy as np
 import pandas as pd
 import torch
 from pathlib import Path
@@ -8,10 +7,11 @@ from torch.utils.data import Dataset
 
 from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
-from tokenizers.trainers import WordLevelTrainer
 from tokenizers.pre_tokenizers import Whitespace
 
 import torch.nn.functional as F
+
+from uu.msc.ai.mair.dialog.core.encoders import Encoder
 
 
 class DatasetFactory:
@@ -97,20 +97,12 @@ class DatasetFactory:
 
         return utterances_train, utterances_val, acts_train, acts_val, targets
 
-    @staticmethod
-    def train_tokenizer(dataset: pd.DataFrame) -> dict[str, int]:
-        trainer = WordLevelTrainer(special_tokens=["[PAD]", "[UNK]", "[CLS]", "[SEP]"])
-        utterances = dataset.values[:,1].tolist()
-        DatasetFactory.tokenizer.train_from_iterator(utterances, trainer)
-
-        return DatasetFactory.tokenizer.get_vocab()
-
 
 class DialogActsDataset(Dataset):
 
-    def __init__(self, vocab: dict[str, int], utterances: npt.NDArray, acts: npt.NDArray, targets: dict[str, int],
+    def __init__(self, encoder: Encoder, utterances: npt.NDArray, acts: npt.NDArray, targets: dict[str, int],
                  max_tokens: int=50) -> None:
-        self.vocab = vocab
+        self.encoder = encoder
         self.utterances = utterances
         self.acts = acts
         self.targets = targets
@@ -124,8 +116,8 @@ class DialogActsDataset(Dataset):
         tensor_act = torch.tensor(self.targets[act], dtype=torch.long)
 
         utterance_tokens = []
-        for token in DatasetFactory.tokenizer.encode(utterance).tokens:
-            utterance_tokens.append(self.vocab[token])
+        for token in self.encoder.encode_sentence(utterance):
+            utterance_tokens.append(token)
 
         tokens_idx = utterance_tokens + ([0] * (self.max_tokens - len(utterance_tokens))) if len(utterance_tokens) < self.max_tokens else utterance_tokens[:self.max_tokens]
         one_hot_encoded = F.one_hot(tensor_act, num_classes=len(self.targets)).to(torch.float)

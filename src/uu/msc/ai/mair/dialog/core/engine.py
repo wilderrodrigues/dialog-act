@@ -33,12 +33,12 @@ def train_loop(model: torch.nn.Module, loss_fn: torch.nn.Module, optimizer: torc
     model.to(device)
     for i in range(1, epochs+1):
         losses = []
-        for X, Y in tqdm(train_loader):
-            X = X.to(device)
-            Y = Y.to(device)
-            Y_preds = model(X)
+        for utterances, acts in tqdm(train_loader):
+            utterances = utterances.to(device)
+            acts = acts.to(device)
+            acts_pred = model(utterances)
 
-            loss = loss_fn(Y_preds, Y)
+            loss = loss_fn(acts_pred, acts)
             losses.append(loss.item())
 
             optimizer.zero_grad()
