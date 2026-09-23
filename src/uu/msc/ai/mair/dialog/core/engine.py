@@ -29,17 +29,16 @@ def calculate_loss_accuracy(model: torch.nn.Module, loss_fn: torch.nn.Module,
 
 
 def train_loop(model: torch.nn.Module, loss_fn: torch.nn.Module, optimizer: torch.optim.Optimizer,
-               train_loader: DataLoader, val_loader: DataLoader, test_loader: DataLoader,
-               epochs: int, device: torch.device):
+               train_loader: DataLoader, val_loader: DataLoader, epochs: int, device: torch.device):
     model.to(device)
     for i in range(1, epochs+1):
         losses = []
-        for X, Y in tqdm(train_loader):
-            X = X.to(device)
-            Y = Y.to(device)
-            Y_preds = model(X)
+        for utterances, acts in tqdm(train_loader):
+            utterances = utterances.to(device)
+            acts = acts.to(device)
+            acts_pred = model(utterances)
 
-            loss = loss_fn(Y_preds, Y)
+            loss = loss_fn(acts_pred, acts)
             losses.append(loss.item())
 
             optimizer.zero_grad()
@@ -48,5 +47,3 @@ def train_loop(model: torch.nn.Module, loss_fn: torch.nn.Module, optimizer: torc
 
         logging.info(f"Train Loss : {torch.tensor(losses).mean():.3f}")
         calculate_loss_accuracy(model, loss_fn, val_loader, device, "Validation")
-
-    calculate_loss_accuracy(model, loss_fn, test_loader, device, "Test")

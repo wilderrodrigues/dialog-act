@@ -22,15 +22,24 @@ Python selection is required. Commit `poetry.lock` with the project.
 
 ```sh
 poetry run dialog-acts --help
-poetry run dialog-acts train --help
-poetry run dialog-acts eval --help
 poetry run pytest
 ```
 
-# Training the model
+# Training the Neural Network model
+
+The simplest way to train the model is to run:
 
 ```sh
 poetry run dialog-acts train ./data/dialog_acts.dat
+```
+
+Other parameters can be passed to the script. For example, one can decide to use a grouped split instead of a random one.
+In addition to that, one can also specify the type of encoder to be used.
+
+To see all options, please run:
+
+```sh
+poetry run dialog-acts train-nn --help
 ```
 
 # Frozen pretrained embeddings
@@ -52,25 +61,3 @@ be. In `encode_tokens` the padded positions are zeroed, so they cannot
 contribute to a convolution. `MAX_TOKENS` is 24 because the longest utterance
 in the data is 26 sub-word tokens and the 99th percentile is 16.
 
-This needs the `transformers` package, which is not a project dependency yet:
-
-```sh
-poetry add transformers
-```
-
-```python
-from uu.msc.ai.mair.dialog.core.embeddings import FrozenDistilBertEncoder
-
-encoder = FrozenDistilBertEncoder()
-
-sentence_features = encoder.encode_sentences(utterances)  # (n, 768)
-token_features = encoder.encode_tokens(utterances)        # (n, 24, 768)
-```
-
-The first call downloads `distilbert-base-uncased` (about 260 MB) from the
-Hugging Face hub. Encoding the full data set takes roughly ten seconds on a
-GPU and a few minutes on CPU.
-
-```sh
-poetry run pytest test/core/test_embeddings.py
-```
