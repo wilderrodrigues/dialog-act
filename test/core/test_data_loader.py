@@ -34,7 +34,7 @@ def test_targets_map() -> None:
     tgt_keys = set(targets_map.keys())
     assert tgt_keys.issubset({"inform", "affirm", "request", "reqalts", "thankyou"})
 
-def test_load_and_split_dataset() -> None:
+def test_load_and_split_vanilla() -> None:
     dataset_file = get_root() / "test" / "resources" / "test_acts.dat"
 
     utterances_train, utterances_val, _, _, targets = (
@@ -43,6 +43,17 @@ def test_load_and_split_dataset() -> None:
     assert utterances_val is not None
     assert utterances_train.shape == (9,)
     assert utterances_val.shape == (9,)
+
+def test_load_and_split_grouped() -> None:
+    dataset_file = get_root() / "test" / "resources" / "test_acts.dat"
+    # dataset_file = get_root() / "data" / "dialog_acts.dat"
+
+    utterances_train, utterances_val, _, _, targets = (
+        DatasetFactory.load_and_split_grouped(data_path=dataset_file, split=.5))
+    assert utterances_train is not None
+    assert utterances_val is not None
+    assert utterances_train.shape == (10,)
+    assert utterances_val.shape == (8,)
 
 def test_build_vocabulary() -> None:
     dataset_file = get_root() / "test" / "resources" / "test_acts.dat"

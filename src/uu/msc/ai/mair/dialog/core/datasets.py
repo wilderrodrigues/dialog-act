@@ -1,8 +1,9 @@
 import numpy.typing as npt
+import numpy as np
 import pandas as pd
 import torch
 from pathlib import Path
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedGroupKFold
 from torch.utils.data import Dataset
 
 from tokenizers import Tokenizer
@@ -61,6 +62,39 @@ class DatasetFactory:
                                                                                   stratify=acts, test_size=split,
                                                                                   random_state=seed,
                                                                                   shuffle=shuffle)
+        return utterances_train, utterances_val, acts_train, acts_val, targets
+
+    @staticmethod
+    def load_and_split_grouped(data_path: Path, separator: str = " ",
+                               split: float = VAL_SPLIT,
+                               shuffle: bool = True,
+                               seed: int = SEED) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, dict[str, int]]:
+        dialog_df = DatasetFactory.load_dataframe(data_path, separator)
+        rows = dialog_df[dialog_df["utterance"] == "noise"].index
+        dialog_df.drop(rows, inplace=True)
+
+        targets = DatasetFactory.get_targets_map(dialog_df)
+        utterances = dialog_df.values[:, 1]
+        acts = dialog_df.values[:, 0]
+
+        utterances_train = None
+        utterances_val = None
+        acts_train = None
+        acts_val = None
+
+        grouped_dataset = StratifiedGroupKFold(n_splits=2, random_state=seed, shuffle=shuffle)
+        for idx, (train_index, val_index) in enumerate(grouped_dataset.split(utterances, acts, utterances)):
+            utterances_train = utterances[train_index]
+            utterances_val = utterances[val_index]
+            acts_train = acts[train_index]
+            acts_val = acts[val_index]
+            # TODO [Wilder]:
+            # We are deliberately not using the second fold here. The idea is that fold-1 has the duplicates, which
+            # are not included in fold-2. Then, the second fold will be the other way around. This is to make
+            # sure that the model is trained with both folds, but without leaking the data from train to validation.
+            # We will discuss this with Professor Roxana.
+            break
+
         return utterances_train, utterances_val, acts_train, acts_val, targets
 
     @staticmethod

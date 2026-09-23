@@ -30,7 +30,7 @@ def train(
 ) -> None:
     seed_everything(seed=seed)
 
-    utterances_train, utterances_val, acts_train, acts_val, targets = DatasetFactory.load_and_split_vanilla(data_path=dataset_path,
+    utterances_train, utterances_val, acts_train, acts_val, targets = DatasetFactory.load_and_split_grouped(data_path=dataset_path,
                                                                             split=val_split,
                                                                             seed=seed)
     dataset = DatasetFactory.load_dataframe(dataset_path, separator=" ")
