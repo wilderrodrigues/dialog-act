@@ -1,3 +1,4 @@
+import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import torch
@@ -7,7 +8,7 @@ from torch.utils.data import Dataset
 
 import torch.nn.functional as F
 
-from uu.msc.ai.mair.dialog.core.encoders import Encoder
+from uu.msc.ai.mair.dialog.core.encoders import Encoder, FrozenDistilBertEncoder
 
 
 class DatasetFactory:
@@ -101,6 +102,9 @@ class DialogActsDataset(Dataset):
         self.targets = targets
         self.max_tokens = max_tokens
 
+        self.features = (encoder.encode_sentence(list(utterances))
+                         if isinstance(encoder, FrozenDistilBertEncoder) else None)
+
     def __len__(self) -> int:
         return len(self.utterances)
 
@@ -108,11 +112,11 @@ class DialogActsDataset(Dataset):
         act, utterance = self.acts[idx], self.utterances[idx]
         tensor_act = torch.tensor(self.targets[act], dtype=torch.long)
 
-        utterance_tokens = []
-        for token in self.encoder.encode_sentence(utterance):
-            utterance_tokens.append(token)
-
-        tokens_idx = utterance_tokens + ([0] * (self.max_tokens - len(utterance_tokens))) if len(utterance_tokens) < self.max_tokens else utterance_tokens[:self.max_tokens]
         one_hot_encoded = F.one_hot(tensor_act, num_classes=len(self.targets)).to(torch.float)
+        if self.features is not None:
+            return torch.from_numpy(self.features[idx]), one_hot_encoded
+
+        utterance_tokens = list(self.encoder.encode_sentence(utterance))
+        tokens_idx = utterance_tokens + ([0] * (self.max_tokens - len(utterance_tokens))) if len(utterance_tokens) < self.max_tokens else utterance_tokens[:self.max_tokens]
 
         return torch.tensor(tokens_idx, dtype=torch.int32), one_hot_encoded
