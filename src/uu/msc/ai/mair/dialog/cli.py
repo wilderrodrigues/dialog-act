@@ -30,13 +30,13 @@ def train(
 ) -> None:
     seed_everything(seed=seed)
 
-    train_split, val_split, targets = DatasetFactory.load_and_split_vanilla(data_path=dataset_path,
+    utterances_train, utterances_val, acts_train, acts_val, targets = DatasetFactory.load_and_split_vanilla(data_path=dataset_path,
                                                                             split=val_split,
                                                                             seed=seed)
     dataset = DatasetFactory.load_dataframe(dataset_path, separator=" ")
     vocab = DatasetFactory.train_tokenizer(dataset=dataset)
-    train_dataset = DialogActsDataset(vocab=vocab, dataframe=train_split, targets=targets)
-    val_dataset = DialogActsDataset(vocab=vocab, dataframe=val_split, targets=targets)
+    train_dataset = DialogActsDataset(vocab=vocab, utterances=utterances_train, acts=acts_train, targets=targets)
+    val_dataset = DialogActsDataset(vocab=vocab, utterances=utterances_val, acts=acts_val, targets=targets)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)

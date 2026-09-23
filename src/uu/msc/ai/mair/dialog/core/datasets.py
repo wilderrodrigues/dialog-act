@@ -1,3 +1,4 @@
+import numpy.typing as npt
 import pandas as pd
 import torch
 from pathlib import Path
@@ -27,6 +28,8 @@ class DatasetFactory:
         with data_path.open() as fd:
             full_lines = fd.read().split(sep="\n")
             for line in full_lines:
+                if line is None or line.strip() == "":
+                    continue
                 tokens = line.split(separator)
                 act = tokens[0]
                 utterance = " ".join(tokens[1:])
@@ -44,18 +47,21 @@ class DatasetFactory:
     def load_and_split_vanilla(data_path: Path, separator: str = " ",
                                split: float = VAL_SPLIT,
                                shuffle: bool = True,
-                               seed: int = SEED) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, int]]:
+                               seed: int = SEED) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, dict[str, int]]:
         dialog_df = DatasetFactory.load_dataframe(data_path, separator)
         rows = dialog_df[dialog_df["utterance"] == "noise"].index
         dialog_df.drop(rows, inplace=True)
 
         targets = DatasetFactory.get_targets_map(dialog_df)
 
-        if shuffle:
-            dialog_df = dialog_df.sample(frac=1.0).reset_index(drop=True)
+        utterances = dialog_df.values[:,1]
+        acts = dialog_df.values[:,0]
 
-        train_dataset, val_dataset = train_test_split(dialog_df, test_size=split, random_state=seed)
-        return train_dataset, val_dataset, targets
+        utterances_train, utterances_val, acts_train, acts_val = train_test_split(utterances, acts,
+                                                                                  stratify=acts, test_size=split,
+                                                                                  random_state=seed,
+                                                                                  shuffle=shuffle)
+        return utterances_train, utterances_val, acts_train, acts_val, targets
 
     @staticmethod
     def train_tokenizer(dataset: pd.DataFrame) -> dict[str, int]:
@@ -68,17 +74,19 @@ class DatasetFactory:
 
 class DialogActsDataset(Dataset):
 
-    def __init__(self, vocab: dict[str, int], dataframe: pd.DataFrame, targets: dict[str, int], max_tokens: int=50) -> None:
+    def __init__(self, vocab: dict[str, int], utterances: npt.NDArray, acts: npt.NDArray, targets: dict[str, int],
+                 max_tokens: int=50) -> None:
         self.vocab = vocab
-        self.dataframe = dataframe
+        self.utterances = utterances
+        self.acts = acts
         self.targets = targets
         self.max_tokens = max_tokens
 
     def __len__(self) -> int:
-        return len(self.dataframe)
+        return len(self.utterances)
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
-        act, utterance = self.dataframe.values[idx]
+        act, utterance = self.acts[idx], self.utterances[idx]
         tensor_act = torch.tensor(self.targets[act], dtype=torch.long)
 
         utterance_tokens = []

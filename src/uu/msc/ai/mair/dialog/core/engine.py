@@ -47,5 +47,3 @@ def train_loop(model: torch.nn.Module, loss_fn: torch.nn.Module, optimizer: torc
 
         logging.info(f"Train Loss : {torch.tensor(losses).mean():.3f}")
         calculate_loss_accuracy(model, loss_fn, val_loader, device, "Validation")
-
-    calculate_loss_accuracy(model, loss_fn, test_loader, device, "Test")
