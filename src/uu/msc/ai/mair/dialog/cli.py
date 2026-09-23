@@ -63,7 +63,7 @@ def train_nn(
     optimizer = Adam(conv_classifier.parameters(), lr=lr)
 
     selected_device = select_device(device)
-    train_loop(conv_classifier, loss_fn, optimizer, train_loader, val_loader, epochs, selected_device)
+    train_loop(conv_classifier, loss_fn, optimizer, train_loader, val_loader, epochs, selected_device, targets)
 
 
 @app.command(name="eval", help="Evaluate a model.")
