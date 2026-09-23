@@ -5,10 +5,6 @@ from pathlib import Path
 from sklearn.model_selection import train_test_split, StratifiedGroupKFold
 from torch.utils.data import Dataset
 
-from tokenizers import Tokenizer
-from tokenizers.models import WordLevel
-from tokenizers.pre_tokenizers import Whitespace
-
 import torch.nn.functional as F
 
 from uu.msc.ai.mair.dialog.core.encoders import Encoder
@@ -18,9 +14,6 @@ class DatasetFactory:
 
     VAL_SPLIT: int = 0.15
     SEED: int = 42
-
-    tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
-    tokenizer.pre_tokenizer = Whitespace()
 
     @staticmethod
     def load_dataframe(data_path: Path, separator: str) -> pd.DataFrame:
