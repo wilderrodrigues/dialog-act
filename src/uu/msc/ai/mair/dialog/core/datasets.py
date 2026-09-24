@@ -31,6 +31,8 @@ class DatasetFactory:
                 data.append([act, utterance])
 
         dialog_df = pd.DataFrame(data, columns=columns)
+        rows = dialog_df[dialog_df["act"] == "null"].index
+        dialog_df.drop(rows, inplace=True)
         return dialog_df
 
     @staticmethod
@@ -39,14 +41,22 @@ class DatasetFactory:
         return targets_map
 
     @staticmethod
+    def load_test_dataset(data_path: Path, separator: str = " ", shuffle: bool = True,
+                          seed: int = SEED) -> tuple[npt.NDArray, npt.NDArray, dict[str, int]]:
+        dialog_df = DatasetFactory.load_dataframe(data_path, separator)
+        targets = DatasetFactory.get_targets_map(dialog_df)
+
+        utterances = np.asarray(dialog_df.values[:,1])
+        acts = np.asarray(dialog_df.values[:,0])
+
+        return utterances, acts, targets
+
+    @staticmethod
     def load_and_split_vanilla(data_path: Path, separator: str = " ",
                                split: float = VAL_SPLIT,
                                shuffle: bool = True,
                                seed: int = SEED) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, dict[str, int]]:
         dialog_df = DatasetFactory.load_dataframe(data_path, separator)
-        rows = dialog_df[dialog_df["utterance"] == "noise"].index
-        dialog_df.drop(rows, inplace=True)
-
         targets = DatasetFactory.get_targets_map(dialog_df)
 
         utterances = dialog_df.values[:,1]
@@ -64,9 +74,6 @@ class DatasetFactory:
                                shuffle: bool = True,
                                seed: int = SEED) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, dict[str, int]]:
         dialog_df = DatasetFactory.load_dataframe(data_path, separator)
-        rows = dialog_df[dialog_df["utterance"] == "noise"].index
-        dialog_df.drop(rows, inplace=True)
-
         targets = DatasetFactory.get_targets_map(dialog_df)
         utterances = dialog_df.values[:, 1]
         acts = dialog_df.values[:, 0]

@@ -1,13 +1,16 @@
 from pathlib import Path
 
+import torch
 from torch import nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
+from uu import get_root
 from uu.msc.ai.mair.dialog.core.datasets import DialogActsDataset, DatasetFactory
 from uu.msc.ai.mair.dialog.core.encoders import EMBED_LEN, SimpleEncoder, FrozenDistilBertEncoder
-from uu.msc.ai.mair.dialog.core.engine import train_loop
+from uu.msc.ai.mair.dialog.core.engine import train_loop, evaluate_model
 from uu.msc.ai.mair.dialog.core.runtime import DeviceChoice, seed_everything, select_device
+from uu.msc.ai.mair.dialog.metrics.plot.utils import plot_confusion_matrix
 from uu.msc.ai.mair.dialog.model.nn_classifier import Conv1DClassifier
 
 from typing import Annotated
@@ -62,17 +65,46 @@ def train_nn(
 
     if isinstance(encoder, SimpleEncoder):
         conv_classifier = Conv1DClassifier(vocabulary_size=vocab_size, n_classes=len(targets))
-    if isinstance(encoder, FrozenDistilBertEncoder):
+    elif isinstance(encoder, FrozenDistilBertEncoder):
         conv_classifier = Conv1DClassifier(vocabulary_size=vocab_size, n_classes=len(targets),
                                            max_tokens=encoder.max_tokens, embed_len=EMBED_LEN)
         conv_classifier.embedding_layer = nn.Identity()
+    else:
+        raise ValueError("Invalid encoder type.")
 
     optimizer = Adam(conv_classifier.parameters(), lr=lr)
 
+    output_dir = get_root() / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
     selected_device = select_device(device)
-    train_loop(conv_classifier, loss_fn, optimizer, train_loader, val_loader, epochs, selected_device, targets)
+    balanced_accuracy, confusion_matrix = train_loop(conv_classifier, loss_fn, optimizer, train_loader, val_loader,
+                                                     epochs, selected_device, output_dir)
+    plot_confusion_matrix(confusion_matrix, targets, output_dir)
 
+@app.command(name="eval-nn", help="Evaluate a model.")
+def evaluate_nn(
+    dataset_path: Annotated[Path, typer.Argument(help="Path to the test dataset.")],
+    model_path: Annotated[Path, typer.Argument(help="Path to the trained NN model.")],
+    device: Annotated[DeviceChoice, typer.Option(help="PyTorch compute device.")] = DeviceChoice.AUTO,
+    batch_size: Annotated[int, typer.Option(min=16, help="Batch size.")] = 64,
+    seed: Annotated[int, typer.Option(min=0, help="Random seed for the training.")] = DatasetFactory.SEED,
+    separator: Annotated[str, typer.Option(help="DAT file separator.")] = " ",
+    encoder: Annotated[str, typer.Option(help="Encoder to use when tokenizing the data. Must be 'simple' or 'bert'")] = "simple",) -> None:
 
-@app.command(name="eval", help="Evaluate a model.")
-def evaluate() -> None:
-    logging.info("This command is under development.")
+    seed_everything(seed=seed)
+
+    dialog_model = torch.load(model_path, weights_only=False, map_location=select_device(device))
+    dialog_model.eval()
+
+    utterances_test, acts_test, targets = DatasetFactory.load_test_dataset(data_path=dataset_path, seed=seed)
+
+    dataset = DatasetFactory.load_dataframe(dataset_path, separator=separator)
+    encoder = nn_config[encoder]()
+    encoder.init_tokenizer(dataset)
+    test_dataset = DialogActsDataset(encoder=encoder, utterances=utterances_test, acts=acts_test, targets=targets)
+
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    balanced_accuracy, confusion_matrix  = evaluate_model(model=dialog_model, dataset_loader=test_loader, device=select_device(device), mode="Test")
+    output_dir = get_root() / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    plot_confusion_matrix(confusion_matrix, targets, output_dir)
