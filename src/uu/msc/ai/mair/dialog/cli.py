@@ -5,7 +5,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from uu.msc.ai.mair.dialog.core.datasets import DialogActsDataset, DatasetFactory
-from uu.msc.ai.mair.dialog.core.encoders import SimpleEncoder, FrozenDistilBertEncoder
+from uu.msc.ai.mair.dialog.core.encoders import EMBED_LEN, SimpleEncoder, FrozenDistilBertEncoder
 from uu.msc.ai.mair.dialog.core.engine import train_loop
 from uu.msc.ai.mair.dialog.core.runtime import DeviceChoice, seed_everything, select_device
 from uu.msc.ai.mair.dialog.model.nn_classifier import Conv1DClassifier
@@ -32,7 +32,7 @@ def train_nn(
     lr: Annotated[float, typer.Option(help="Learning rate.")] = 1e-3,
     val_split: Annotated[float, typer.Option(help="Validation split ration.")] = DatasetFactory.VAL_SPLIT,
     separator: Annotated[str, typer.Option(help="DAT file separator.")] = " ",
-    encoder: Annotated[str, typer.Option(help="Encoder to use when toenizing the data. Must be 'simple' or 'bert'")] = "simple",
+    encoder: Annotated[str, typer.Option(help="Encoder to use when tokenizing the data. Must be 'simple' or 'bert'")] = "simple",
     split_strategy: Annotated[str, typer.Option(help="Split strategy to be used. Must be 'vanilla' or 'grouped'")] = "vanilla",
 ) -> None:
     seed_everything(seed=seed)
@@ -59,7 +59,14 @@ def train_nn(
 
     loss_fn = nn.CrossEntropyLoss()
     vocab_size = len(encoder.get_vocabulary())
-    conv_classifier = Conv1DClassifier(vocabulary_size=vocab_size, n_classes=len(targets))
+
+    if isinstance(encoder, SimpleEncoder):
+        conv_classifier = Conv1DClassifier(vocabulary_size=vocab_size, n_classes=len(targets))
+    if isinstance(encoder, FrozenDistilBertEncoder):
+        conv_classifier = Conv1DClassifier(vocabulary_size=vocab_size, n_classes=len(targets),
+                                           max_tokens=encoder.max_tokens, embed_len=EMBED_LEN)
+        conv_classifier.embedding_layer = nn.Identity()
+
     optimizer = Adam(conv_classifier.parameters(), lr=lr)
 
     selected_device = select_device(device)
