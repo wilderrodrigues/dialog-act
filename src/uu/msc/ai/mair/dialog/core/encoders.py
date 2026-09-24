@@ -78,12 +78,11 @@ class FrozenDistilBertEncoder(Encoder):
         self.tokenizer = None
         self.model = AutoModel.from_pretrained(self.model_name).to(self.device).eval()
 
-    def _encode_batch(self, batch: list[str]) -> np.ndarray:
+    def _encode_batch(self, batch: list[str]) -> torch.Tensor:
         encoded = self.tokenizer(batch, padding="max_length", truncation=True,
                                  max_length=self.max_tokens, return_tensors="pt").to(self.device)
         hidden_state = self.model(**encoded).last_hidden_state
-        pooled = hidden_state[:, 0]
-        return pooled.detach().cpu().numpy()
+        return hidden_state * encoded["attention_mask"].unsqueeze(-1).to(hidden_state.dtype)
 
     def init_tokenizer(self, dataset: pd.DataFrame | None) -> TokenizersBackend | SentencePieceBackend:
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
@@ -99,18 +98,22 @@ class FrozenDistilBertEncoder(Encoder):
             raise ValueError("Tokenizer is not initialized. Call 'init_tokenizer' first.")
         return self.tokenizer.get_vocab()
 
-    def encode_sentence(self, utterance: str) -> np.ndarray:
+    def encode_sentence(self, utterance: str | list[str]) -> np.ndarray:
+        is_single = isinstance(utterance, str)
+        utterances = [utterance] if is_single else list(utterance)
+        embeddings = np.zeros((len(utterances), self.max_tokens, EMBED_LEN), dtype=np.float32)
         with torch.no_grad():
-            encoded = self.tokenizer(utterance, return_tensors="pt").to(self.device)
-            hidden_state = self.model(**encoded).last_hidden_state
-            pooled = hidden_state[:, 0]
-            return pooled.detach().cpu().numpy()
+            for start in range(0, len(utterances), self.batch_size):
+                batch = utterances[start:start + self.batch_size]
+                masked = self._encode_batch(batch)
+                embeddings[start:start + len(batch)] = masked.detach().cpu().numpy()
+        return embeddings[0] if is_single else embeddings
 
     def encode_sentences(self, utterances: list[str]) -> np.ndarray:
         embeddings = np.zeros((len(utterances), EMBED_LEN), dtype=np.float32)
         with torch.no_grad():
             for start in range(0, len(utterances), self.batch_size):
-                batch = utterances[start:start + self.batch_size]
-                pooled = self._encode_batch(batch)
-                embeddings[start:start + len(batch)] = pooled
+                batch = list(utterances[start:start + self.batch_size])
+                pooled = self._encode_batch(batch)[:, 0]
+                embeddings[start:start + len(batch)] = pooled.detach().cpu().numpy()
         return embeddings
