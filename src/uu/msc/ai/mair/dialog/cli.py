@@ -96,7 +96,7 @@ def evaluate_nn(
     dialog_model = torch.load(model_path, weights_only=False, map_location=select_device(device))
     dialog_model.eval()
 
-    utterances_test, acts_test, targets = DatasetFactory.load_test_dataset(data_path=dataset_path, seed=seed)
+    utterances_test, acts_test, targets = DatasetFactory.load_test_dataset(data_path=dataset_path)
 
     dataset = DatasetFactory.load_dataframe(dataset_path, separator=separator)
     encoder = nn_config[encoder]()
