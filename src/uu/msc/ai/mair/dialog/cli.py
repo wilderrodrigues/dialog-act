@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import torch
 from torch import nn
 from torch.optim import Adam
@@ -7,7 +8,7 @@ from torch.utils.data import DataLoader
 
 from uu import get_root
 from uu.msc.ai.mair.dialog.core.datasets import DialogActsDataset, DatasetFactory
-from uu.msc.ai.mair.dialog.core.encoders import EMBED_LEN, SimpleEncoder, FrozenDistilBertEncoder
+from uu.msc.ai.mair.dialog.core.encoders import EMBED_LEN, Encoder, SimpleEncoder, FrozenDistilBertEncoder
 from uu.msc.ai.mair.dialog.core.engine import train_loop, evaluate_model
 from uu.msc.ai.mair.dialog.core.runtime import DeviceChoice, seed_everything, select_device
 from uu.msc.ai.mair.dialog.metrics.plot.utils import plot_confusion_matrix
@@ -108,3 +109,44 @@ def evaluate_nn(
     output_dir = get_root() / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
     plot_confusion_matrix(confusion_matrix, targets, output_dir)
+
+def encode_one(encoder: Encoder, utterance: str, targets: dict[str, int]) -> torch.Tensor:
+    # Reuses the training pipeline, but dataset need a label per utterance.
+    dataset = DialogActsDataset(encoder=encoder, utterances=np.asarray([utterance]),
+                                acts=np.asarray([next(iter(targets))]), targets=targets)
+    features, _ = next(iter(DataLoader(dataset, batch_size=1)))
+    return features
+
+
+@app.command(name="prompt-nn", help="Classify typed utterances until 'exit' is entered.")
+def prompt_nn(
+    model_path: Annotated[Path, typer.Argument(help="Path to the trained NN model.")],
+    dataset_path: Annotated[Path, typer.Argument(help="The dataset the model was trained on.")],
+    device: Annotated[DeviceChoice, typer.Option(help="PyTorch compute device.")] = DeviceChoice.AUTO,
+    encoder: Annotated[str, typer.Option(help="Must match training: 'simple' or 'bert'")] = "simple",
+) -> None:
+    if encoder not in ("simple", "bert"):
+        raise typer.BadParameter(f"Invalid encoder: {encoder}. Must be one of 'simple' or 'bert'.")
+
+    selected_device = select_device(device)
+    model = torch.load(model_path, weights_only=False, map_location=selected_device)
+    model.eval()
+    *_, targets = DatasetFactory.load_and_split_vanilla(data_path=dataset_path)
+    acts = {idx: act for act, idx in targets.items()}
+    encoder = nn_config[encoder]()
+    encoder.init_tokenizer(DatasetFactory.load_dataframe(dataset_path, separator=" "))
+
+    print("Type an utterance to classify it, or 'exit' to quit.")
+    while True:
+        try:
+            utterance = input("> ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            break
+        if utterance in ("exit", "quit"):
+            break
+        if not utterance:
+            continue
+
+        with torch.no_grad():
+            index = model(encode_one(encoder, utterance, targets).to(selected_device)).argmax(dim=1).item()
+        print(acts[index])
