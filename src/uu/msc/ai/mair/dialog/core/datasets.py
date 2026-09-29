@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -17,7 +19,7 @@ class DatasetFactory:
     SEED: int = 42
 
     @staticmethod
-    def load_dataframe(data_path: Path, separator: str) -> pd.DataFrame:
+    def load_dataframe(data_path: Path, separator: str, drop_null: bool = False) -> pd.DataFrame:
         columns = ["act", "utterance"]
         data = []
         with data_path.open() as fd:
@@ -31,8 +33,9 @@ class DatasetFactory:
                 data.append([act, utterance])
 
         dialog_df = pd.DataFrame(data, columns=columns)
-        rows = dialog_df[dialog_df["act"] == "null"].index
-        dialog_df.drop(rows, inplace=True)
+        if drop_null:
+            rows = dialog_df[dialog_df["act"] == "null"].index
+            dialog_df.drop(rows, inplace=True)
         return dialog_df
 
     @staticmethod
@@ -41,8 +44,7 @@ class DatasetFactory:
         return targets_map
 
     @staticmethod
-    def load_test_dataset(data_path: Path, separator: str = " ", shuffle: bool = True,
-                          seed: int = SEED) -> tuple[npt.NDArray, npt.NDArray, dict[str, int]]:
+    def load_test_dataset(data_path: Path, separator: str = " ") -> tuple[npt.NDArray, npt.NDArray, dict[str, int]]:
         dialog_df = DatasetFactory.load_dataframe(data_path, separator)
         targets = DatasetFactory.get_targets_map(dialog_df)
 
@@ -50,6 +52,15 @@ class DatasetFactory:
         acts = np.asarray(dialog_df.values[:,0])
 
         return utterances, acts, targets
+
+    @staticmethod
+    def load_and_split_vanilla_bow(bow_vector: Any, acts: npt.NDArray,
+                                   split: float = VAL_SPLIT, shuffle: bool = True, seed: int = SEED) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]:
+        utterances_train, utterances_val, acts_train, acts_val = train_test_split(bow_vector.toarray(), acts,
+                                                                                  stratify=acts, test_size=split,
+                                                                                  random_state=seed,
+                                                                                  shuffle=shuffle)
+        return utterances_train, utterances_val, acts_train, acts_val
 
     @staticmethod
     def load_and_split_vanilla(data_path: Path, separator: str = " ",
