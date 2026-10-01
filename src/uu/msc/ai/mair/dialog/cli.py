@@ -6,6 +6,8 @@ from torch import nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
+import pickle
+
 from uu import get_root
 from uu.msc.ai.mair.dialog.core.datasets import DialogActsDataset, DatasetFactory
 from uu.msc.ai.mair.dialog.core.encoders import EMBED_LEN, Encoder, SimpleEncoder, FrozenDistilBertEncoder
@@ -13,6 +15,13 @@ from uu.msc.ai.mair.dialog.core.engine import train_loop, evaluate_model
 from uu.msc.ai.mair.dialog.core.runtime import DeviceChoice, seed_everything, select_device
 from uu.msc.ai.mair.dialog.metrics.plot.utils import plot_confusion_matrix
 from uu.msc.ai.mair.dialog.model.nn_classifier import Conv1DClassifier
+from uu.msc.ai.mair.dialog.model.log_reg_classifier import LogRegModel
+
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, confusion_matrix, recall_score, precision_score
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics import ConfusionMatrixDisplay
+
 
 from typing import Annotated
 import logging
@@ -150,3 +159,80 @@ def prompt_nn(
         with torch.no_grad():
             index = model(encode_one(encoder, utterance, targets).to(selected_device)).argmax(dim=1).item()
         print(acts[index])
+
+
+
+
+@app.command(name="train-logreg", help="Train a Logistic Regression model")
+def train_log_reg(
+    dataset_path: Annotated[Path, typer.Argument(help="Path to the dataset.")],
+    num_iterations: Annotated[int, typer.Option(min=100, help="Maximum number of iterations.")] = 1000,
+    seed: Annotated[int, typer.Option(min=0, help="Random seed for the training.")] = DatasetFactory.SEED,
+    val_split: Annotated[float, typer.Option(help="Validation split ration.")] = DatasetFactory.VAL_SPLIT,
+    separator: Annotated[str, typer.Option(help="DAT file separator.")] = " ",
+) -> None:
+    seed_everything(seed=seed)
+
+    logreg = LogRegModel(dataset_path,num_iterations=num_iterations)
+    acts_val, acts_pred = logreg.train(split=val_split,seed=seed)
+
+
+    output_dir = get_root() / "output_log_reg"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+
+    with open(output_dir / "log_reg", "wb") as f:
+        pickle.dump(logreg, f)
+    labels = list(logreg.targets)
+    conf_matrix = confusion_matrix(acts_val, acts_pred,labels=labels)
+    disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=logreg.targets)
+    disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
+    plt.title("Confusion Matrix")
+    plt.savefig(output_dir / "log_reg_confusion_matrix.png")
+    plt.show()
+
+
+@app.command(name="evaluate-log-reg", help="Train a Logistic Regression model")
+def evaluate_log_reg(
+    dataset_path: Annotated[Path, typer.Argument(help="Path to the dataset.")],
+    model_path: Annotated[Path, typer.Argument(help="Path to the trained NN model.")],
+    seed: Annotated[int, typer.Option(min=0, help="Random seed for the training.")] = DatasetFactory.SEED,
+    val_split: Annotated[float, typer.Option(help="Validation split ration.")] = DatasetFactory.VAL_SPLIT,
+    separator: Annotated[str, typer.Option(help="DAT file separator.")] = " ",
+) -> None:
+    seed_everything(seed=seed)
+
+    with open(model_path, 'rb') as file:
+        dialog_model_log_reg = pickle.load(file)
+
+    mode="Test"
+    utterances_test, acts_test, targets = DatasetFactory.load_test_dataset(data_path=dataset_path)
+    predictions_test_set = dialog_model_log_reg.predict(utterances_test)
+
+    accuracy = accuracy_score(acts_test, predictions_test_set)
+    balanced_accuracy = balanced_accuracy_score(acts_test, predictions_test_set)
+
+    conf_matrix = confusion_matrix(acts_test, predictions_test_set)
+    recall = recall_score(acts_test, predictions_test_set, average="micro", labels=np.unique(predictions_test_set))
+    precision = precision_score(acts_test, predictions_test_set, average="micro", labels=np.unique(predictions_test_set))
+    logging.info(f"{mode} Accuracy  : {accuracy:.3f}")
+    logging.info(f"{mode} Balanced Accuracy  : {balanced_accuracy:.3f}")
+    logging.info(f"{mode} Recall  : {recall:.3f}")
+    logging.info(f"{mode} Precision  : {precision:.3f}")
+    conf_matrix = confusion_matrix(acts_test, predictions_test_set)
+
+    output_dir = get_root() / "output_log_reg"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+
+    labels = list(dialog_model_log_reg.targets)
+    conf_matrix = confusion_matrix(acts_test, predictions_test_set,labels=labels)
+    disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=labels)
+    disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
+    plt.title("Confusion Matrix")
+    plt.savefig(output_dir / "eval_log_reg_confusion_matrix.png")
+    plt.show()
+
+
+
+

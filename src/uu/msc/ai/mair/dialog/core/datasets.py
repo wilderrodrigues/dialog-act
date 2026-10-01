@@ -53,9 +53,12 @@ class DatasetFactory:
 
         return utterances, acts, targets
 
+
+    
     @staticmethod
     def load_and_split_vanilla_bow(bow_vector: Any, acts: npt.NDArray,
                                    split: float = VAL_SPLIT, shuffle: bool = True, seed: int = SEED) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]:
+        
         utterances_train, utterances_val, acts_train, acts_val = train_test_split(bow_vector.toarray(), acts,
                                                                                   stratify=acts, test_size=split,
                                                                                   random_state=seed,
