@@ -13,18 +13,27 @@ class LogRegModel:
         self.dataset_path = dataset_path
         self.vectorizer = CountVectorizer()
         self.model = LogisticRegression(max_iter=num_iterations)
-        self.bow_vector, self.acts = self._build_bow_vector()
+        self.bow_vector = None
+        self.acts = None 
+        self.targets = None
 
-    def _build_bow_vector(self) -> tuple[npt.NDArray, npt.NDArray]:
-        dataframe = DatasetFactory.load_dataframe(self.dataset_path, separator=" ")
-        utterances = dataframe.values[:,1]
-        acts = dataframe.values[:,0]
-        return self.vectorizer.fit_transform(utterances), acts
+    def _build_bow_vector(self,data):
+        return self.vectorizer.fit_transform(data)
 
-    def train(self, split: float) -> tuple[npt.NDArray, npt.NDArray]:
-        utterances_train, utterances_val, acts_train, acts_val = DatasetFactory.load_and_split_vanilla_bow(bow_vector=self.bow_vector,
-                                                                                                           acts=self.acts, split=split)
+    def train(self, split: float, seed) -> tuple[npt.NDArray, npt.NDArray]:
 
-        self.model.fit(utterances_train, acts_train)
-        acts_pred = self.model.predict(utterances_val)
+        utterances_train, utterances_val, acts_train, acts_val,targets = DatasetFactory.load_and_split_vanilla(data_path= self.dataset_path, separator =  " ",
+                               split= split,
+                               seed = seed)
+        self.targets = targets
+        self.bow_vector = self._build_bow_vector(utterances_train)
+        vectorized_train = self.bow_vector 
+        self.model.fit(vectorized_train, acts_train)
+        vectorized_test = self.vectorizer.transform(utterances_val)
+        acts_pred = self.model.predict(vectorized_test)
         return acts_val, acts_pred
+    
+    def predict(self, utterance):
+        bow = self.vectorizer.transform(utterance)
+        prediction = self.model.predict(bow)
+        return prediction
