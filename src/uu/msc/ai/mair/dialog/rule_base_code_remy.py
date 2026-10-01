@@ -1,26 +1,19 @@
 
 
+from pathlib import Path
+from uu.msc.ai.mair.dialog.core.datasets import DatasetFactory
+
 # inlezen data
 
-#functie 1, data uitlezen
+# 1. Loading the data through the DatasetFactory class
+dataset_path = Path("data/dialog_acts.dat")
+df = DatasetFactory.load_dataframe(dataset_path, separator=" ")
 
-def load_data(file_path):
-    dialog_acts = []
-    utterances = []
-    with open(file_path, 'r') as file:
-        for line in file:
-            parts = line.strip().lower().split(" ", 1) 
-            # Only splits after the first space, 
-            # so divides the input in 0 and 1, 
-            # 0 being the first word and 1 the rest of the sentence
+# 2. Splitting in utterances and dialog acts
+utterances = df["utterance"].tolist()
+dialog_acts = df["act"].tolist()
 
-            dialog_acts.append(parts[0]) # append the first word to the dialog_acts list
-            utterances.append(parts[1])  # appends the second part of the sentence to the utterances list
-    return dialog_acts, utterances
-
-dialog_acts, utterances = load_data("data/dialog_acts.dat") # aanroepen functie 1
-
-# de keywords
+# The keywords
 
 keywords = {
     "thankyou" : ["thank", "thank you bye"],
