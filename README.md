@@ -60,6 +60,8 @@ poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder simple --epochs
 poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder simple --epochs 5 --split-strategy grouped
 poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder bert --epochs 5 --split-strategy vanilla
 poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder bert --epochs 5 --split-strategy grouped
+poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder finetune --epochs 5 --split-strategy vanilla
+poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder finetune --epochs 5 --split-strategy grouped
 ```
 
 The number of epochs given above is just for the sake of demonstration. The default value is set to 20. 
@@ -88,3 +90,18 @@ The metrics will be printed out on the console, and the confusion matrix will be
 frozen DistilBERT model. The pretrained weights are never updated: the model runs in evaluation mode inside
 `torch.no_grad`, so it is a fixed feature extractor rather than something we train. It offers one shape per kind of
 classifier, so every classifier can be trained on the same representation:
+
+| method | shape | consumer |
+|---|---|---|
+| `encode_sentence` | `(n, MAX_TOKENS, 768)` | models that consume a sequence, such as the convolutional net |
+| `encode_sentences` | `(n, 768)`, the `[CLS]` vector | models that need one fixed-size vector, such as logistic regression |
+
+# Fine-tuned DistilBERT
+
+With `--encoder finetune` the DistilBERT weights are trained end to end together with the classifier, instead of
+being kept frozen:
+
+```sh
+poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder finetune --epochs 20
+```
+

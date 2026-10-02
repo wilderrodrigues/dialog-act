@@ -3,7 +3,7 @@ import pytest
 
 from uu import get_root
 from uu.msc.ai.mair.dialog.core.datasets import DatasetFactory
-from uu.msc.ai.mair.dialog.core.encoders import EMBED_LEN, FrozenDistilBertEncoder, SimpleEncoder
+from uu.msc.ai.mair.dialog.core.encoders import EMBED_LEN, DistilBertTokenEncoder, FrozenDistilBertEncoder, SimpleEncoder
 
 UTTERANCES = [
     "thank you good bye",
@@ -76,3 +76,23 @@ def test_bert_vocabulary(bert_encoder: FrozenDistilBertEncoder) -> None:
 
     tokens = [vocab[word] for word in "moderately priced".split(sep=" ")]
     assert tokens == [17844, 21125]
+
+@pytest.fixture(scope="module")
+def token_encoder() -> DistilBertTokenEncoder:
+    encoder = DistilBertTokenEncoder(max_tokens=16)
+    encoder.init_tokenizer(dataset=None)
+    return encoder
+
+def test_token_encoder_returns_ids_and_mask(token_encoder: DistilBertTokenEncoder) -> None:
+    encoded = token_encoder.encode_sentences(UTTERANCES)
+    assert encoded.shape == (len(UTTERANCES), 2, 16)
+    assert encoded.dtype == np.int64
+
+def test_token_encoder_masks_the_padding(token_encoder: DistilBertTokenEncoder) -> None:
+    ids, mask = token_encoder.encode_sentence("thank you")
+    assert mask.sum() == 4
+    assert (ids[mask == 0] == token_encoder.get_tokenizer().pad_token_id).all()
+
+def test_token_encoder_shares_the_bert_vocabulary(token_encoder: DistilBertTokenEncoder,
+                                                  bert_encoder: FrozenDistilBertEncoder) -> None:
+    assert token_encoder.get_vocabulary() == bert_encoder.get_vocabulary()
