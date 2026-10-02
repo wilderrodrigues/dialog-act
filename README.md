@@ -90,6 +90,10 @@ The metrics will be printed out on the console, and the confusion matrix will be
 frozen DistilBERT model. The pretrained weights are never updated: the model runs in evaluation mode inside
 `torch.no_grad`, so it is a fixed feature extractor rather than something we train. It offers one shape per kind of
 classifier, so every classifier can be trained on the same representation:
+| method | shape | consumer |
+|---|---|---|
+| `encode_sentence` | `(n, MAX_TOKENS, 768)` | models that consume a sequence, such as the convolutional net |
+| `encode_sentences` | `(n, 768)`, the `[CLS]` vector | models that need one fixed-size vector, such as logistic regression |
 
 
 # Fine-tuned DistilBERT
