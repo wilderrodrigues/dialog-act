@@ -80,13 +80,13 @@ def train_nn(
 
     if isinstance(encoder, SimpleEncoder):
         conv_classifier = Conv1DClassifier(vocabulary_size=vocab_size, n_classes=len(targets))
+    elif isinstance(encoder, DistilBertTokenEncoder):
+        conv_classifier = FineTunedDistilBertClassifier(vocabulary_size=vocab_size, n_classes=len(targets),
+                                                        max_tokens=encoder.max_tokens)
     elif isinstance(encoder, FrozenDistilBertEncoder):
         conv_classifier = Conv1DClassifier(vocabulary_size=vocab_size, n_classes=len(targets),
                                            max_tokens=encoder.max_tokens, embed_len=EMBED_LEN)
         conv_classifier.embedding_layer = nn.Identity()
-    elif isinstance(encoder, DistilBertTokenEncoder):
-        conv_classifier = FineTunedDistilBertClassifier(vocabulary_size=vocab_size, n_classes=len(targets),
-                                                        max_tokens=encoder.max_tokens)
     else:
         raise ValueError("Invalid encoder type.")
 

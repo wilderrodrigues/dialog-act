@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 
 import torch.nn.functional as F
 
-from uu.msc.ai.mair.dialog.core.encoders import Encoder, FrozenDistilBertEncoder, DistilBertTokenEncoder
+from uu.msc.ai.mair.dialog.core.encoders import Encoder, FrozenDistilBertEncoder
 
 
 class DatasetFactory:
@@ -124,7 +124,7 @@ class DialogActsDataset(Dataset):
         self.max_tokens = max_tokens
 
         self.features = (encoder.encode_sentence(list(utterances))
-                         if isinstance(encoder, (FrozenDistilBertEncoder, DistilBertTokenEncoder)) else None)
+                         if isinstance(encoder, FrozenDistilBertEncoder) else None)
 
     def __len__(self) -> int:
         return len(self.utterances)

@@ -118,40 +118,20 @@ class FrozenDistilBertEncoder(Encoder):
                 embeddings[start:start + len(batch)] = pooled.detach().cpu().numpy()
         return embeddings
 
-class DistilBertTokenEncoder(Encoder):
-    # Tokenizer only: when DistilBERT is fine-tuned its weights have to receive gradients, so the model itself lives
-    # in FineTunedDistilBertClassifier and this encoder just produces its inputs.
-
+class DistilBertTokenEncoder(FrozenDistilBertEncoder):
     def __init__(self, model_name: str = DISTILBERT_NAME, max_tokens: int = MAX_TOKENS) -> None:
         hf_logging.set_verbosity_error()
 
         self.model_name = model_name
         self.max_tokens = max_tokens
         self.tokenizer = None
-
-    def init_tokenizer(self, dataset: pd.DataFrame | None) -> TokenizersBackend | SentencePieceBackend:
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        return self.tokenizer
-
-    def get_tokenizer(self) -> TokenizersBackend | SentencePieceBackend:
-        if self.tokenizer is None:
-            raise ValueError("Tokenizer is not initialized. Call 'init_tokenizer' first.")
-        return self.tokenizer
-
-    def get_vocabulary(self) -> dict[str, int]:
-        if self.tokenizer is None:
-            raise ValueError("Tokenizer is not initialized. Call 'init_tokenizer' first.")
-        return self.tokenizer.get_vocab()
+        self.model = None
 
     def encode_sentence(self, utterance: str | list[str]) -> np.ndarray:
-        is_single = isinstance(utterance, str)
-        utterances = [utterance] if is_single else list(utterance)
-        encoded = self.tokenizer(utterances, padding="max_length", truncation=True,
-                                 max_length=self.max_tokens, return_tensors="np")
-        # Ids and attention mask are stacked, (2, max_tokens) per utterance, so a sample stays a single tensor as the
-        # DataLoader and the training loop expect.
+        encoded = self.get_tokenizer()(utterance, padding="max_length", truncation=True,
+                                       max_length=self.max_tokens, return_tensors="np")
         ids_and_mask = np.stack([encoded["input_ids"], encoded["attention_mask"]], axis=1).astype(np.int64)
-        return ids_and_mask[0] if is_single else ids_and_mask
+        return ids_and_mask[0] if isinstance(utterance, str) else ids_and_mask
 
     def encode_sentences(self, utterances: list[str]) -> np.ndarray:
-        return self.encode_sentence(list(utterances))
+        raise NotImplementedError("DistilBertTokenEncoder runs no model, so it has no sentence vectors.")

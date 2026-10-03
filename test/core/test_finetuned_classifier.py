@@ -14,10 +14,8 @@ def test_finetuning_updates_the_pretrained_weights() -> None:
     encoder.init_tokenizer(dataset=None)
     model = FineTunedDistilBertClassifier(vocabulary_size=len(encoder.get_vocabulary()), n_classes=4, max_tokens=16)
 
-    logits = model(torch.from_numpy(encoder.encode_sentences(UTTERANCES)))
+    logits = model(torch.from_numpy(encoder.encode_sentence(UTTERANCES)))
     assert logits.shape == (len(UTTERANCES), 4)
-
-    # The counterpart of test_encoder_is_frozen: the gradient has to reach the very first DistilBERT layer.
     logits.sum().backward()
     word_embeddings = model.encoder.embeddings.word_embeddings.weight
     assert word_embeddings.grad is not None

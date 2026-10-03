@@ -84,7 +84,7 @@ def token_encoder() -> DistilBertTokenEncoder:
     return encoder
 
 def test_token_encoder_returns_ids_and_mask(token_encoder: DistilBertTokenEncoder) -> None:
-    encoded = token_encoder.encode_sentences(UTTERANCES)
+    encoded = token_encoder.encode_sentence(UTTERANCES)
     assert encoded.shape == (len(UTTERANCES), 2, 16)
     assert encoded.dtype == np.int64
 
