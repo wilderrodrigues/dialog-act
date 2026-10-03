@@ -117,3 +117,21 @@ class FrozenDistilBertEncoder(Encoder):
                 pooled = self._encode_batch(batch)[:, 0]
                 embeddings[start:start + len(batch)] = pooled.detach().cpu().numpy()
         return embeddings
+
+class DistilBertTokenEncoder(FrozenDistilBertEncoder):
+    def __init__(self, model_name: str = DISTILBERT_NAME, max_tokens: int = MAX_TOKENS) -> None:
+        hf_logging.set_verbosity_error()
+
+        self.model_name = model_name
+        self.max_tokens = max_tokens
+        self.tokenizer = None
+        self.model = None
+
+    def encode_sentence(self, utterance: str | list[str]) -> np.ndarray:
+        encoded = self.get_tokenizer()(utterance, padding="max_length", truncation=True,
+                                       max_length=self.max_tokens, return_tensors="np")
+        ids_and_mask = np.stack([encoded["input_ids"], encoded["attention_mask"]], axis=1).astype(np.int64)
+        return ids_and_mask[0] if isinstance(utterance, str) else ids_and_mask
+
+    def encode_sentences(self, utterances: list[str]) -> np.ndarray:
+        raise NotImplementedError("DistilBertTokenEncoder runs no model, so it has no sentence vectors.")
