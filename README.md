@@ -1,107 +1,57 @@
+# Methods in Artificial Intelligence Project
+
+This project is a part of the course Methods in Artificial Intelligence. It covers the implementation
+of several Dialog Acts classifiers, where we explored the following: Simple rule-base classifier; a vanilla bag-of-words
+classifier; a 1D Convolutional Neural Network, using bag-of-words features, classifier; and DistilBert classifier.
+
+Moreover, we explored the use of a pre-trained DistilBert model to finetune the 1D CNN classifier.
+
 ## Setup
 
-Install Poetry 2.1+ and Python 3.13.15.
+To be able to run the project, you will need Python installed in your operating system. Any version in the range `>=3.13.15,<3.14`
+will suffice.
 
-To install PyEnv and Poetry, if necessary, please follow the official documentation:
+Once your Python installation is ready, please make sure you have the latest version of Poetry installed.
 
-* [Poetry](https://python-poetry.org/docs/).
-* [PyEnv](https://github.com/pyenv/pyenv#installation).
+### Poetry for Windows
+
+The installer script is available directly at install.python-poetry.org, and is developed in its own repository.
+The script can be executed directly (i.e. ‘curl python’) or downloaded and then executed from disk (e.g. in a CI environment).
+
+### Linux, macOS, Windows (WSL)
 
 ```sh
-pyenv install -s 3.13.15
-pyenv local 3.13.15 # or local, if you do not want to mess with your environment. 
-poetry env use "$(pyenv which python)"
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+### Windows (PowerShell)
+
+```sh
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | py -
+```
+
+If you run into issues, please refer to the official installation instructions: https://python-poetry.org/docs/#installation
+
+## Project Installation
+
+Once Python and Poetry are installed, please install the project dependencies. The command must be executed from the project root directory.
+
+```sh
 poetry install
 ```
 
-Run these commands from the project directory; `.python-version` selects the
-project interpreter. Poetry creates the environment in `.venv`. No global
-Python selection is required. Commit `poetry.lock` with the project.
+### Unit Tests
 
-## Commands
+To check that the delivered code is working as expected, yoou can run the unit tests:
 
 ```sh
-poetry run dialog-acts --help
 poetry run pytest
 ```
 
-# Baseline Model
+## Project Structure
 
-The baseline model, a rule-based model built with hand-crafted features, can be found under [Baseline](./src/uu/msc/ai/mair/dialog/rule_base_code_remy.py).
-It will be refactored to be compliant with the rest of the codebase.
+We have split the project into two parts: `dialog`; and `recommender`. You will find mode information under the
+respective README files.
 
-# Logistic Regression
-
-We are still working on the refactoring of the Logistic Regression model. However, the current implementation
-under [Logistic Regression](./src/uu/msc/ai/mair/dialog/model/log_reg_classifier.py) is functional, with accuracy of
-80.60%.
-
-# Training the Neural Network model
-
-The simplest way to train the model is to run:
-
-```sh
-poetry run dialog-acts train-nn ./data/dialog_acts.dat
-```
-
-Other parameters can be passed to the script. For example, one can decide to use a grouped split instead of a random one.
-In addition to that, one can also specify the type of encoder to be used.
-
-To see all options, please run:
-
-```sh
-poetry run dialog-acts train-nn --help
-```
-
-Currently, the Neural Network can be trained with the following flavours:
-
-```sh
-poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder simple --epochs 5 --split-strategy vanilla
-poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder simple --epochs 5 --split-strategy grouped
-poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder bert --epochs 5 --split-strategy vanilla
-poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder bert --epochs 5 --split-strategy grouped
-poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder finetune --epochs 5 --split-strategy vanilla
-poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder finetune --epochs 5 --split-strategy grouped
-```
-
-The number of epochs given above is just for the sake of demonstration. The default value is set to 20. 
-
-## Model checkpoints
-
-The best model is saved under `ouput/best_model_epoch_N_YYYYMMD.pth`.
-
-## Evaluating a trained Neural Network model
-
-To evaluate a model, you will need a test dataset, which is a held-out split not present during training, and a
-trained model. Please make sure to use either a `simple` or a `bert` encoder based model.
-
-The commands below will evaluate the model on the test dataset:
-
-```sh
-poetry run dialog-acts eval-nn my-test-split.dat my-simple-encoder-model.pth --encoder simple
-poetry run dialog-acts eval-nn my-test-split.dat my-bert-encoder-model.pth --encoder bert
-```
-
-The metrics will be printed out on the console, and the confusion matrix will be saved under `ouput/nn_confusion_matrix.png`.
-
-# Frozen pretrained embeddings
-
-[FrozenDistilBertEncoder](./src/uu/msc/ai/mair/dialog/core/encoders.py) turns utterances into features with a
-frozen DistilBERT model. The pretrained weights are never updated: the model runs in evaluation mode inside
-`torch.no_grad`, so it is a fixed feature extractor rather than something we train. It offers one shape per kind of
-classifier, so every classifier can be trained on the same representation:
-| method | shape | consumer |
-|---|---|---|
-| `encode_sentence` | `(n, MAX_TOKENS, 768)` | models that consume a sequence, such as the convolutional net |
-| `encode_sentences` | `(n, 768)`, the `[CLS]` vector | models that need one fixed-size vector, such as logistic regression |
-
-
-# Fine-tuned DistilBERT
-
-With `--encoder finetune` the DistilBERT weights are trained end to end together with the classifier, instead of
-being kept frozen:
-
-```sh
-poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder finetune --epochs 20
-```
-
+* [Dialog Acts](./src/uu/msc/ai/mair/dialog/README.md)
+* [Recommender](./src/uu/msc/ai/mair/recommender/README.md)

@@ -1,8 +1,6 @@
 import random
 import torch
 import numpy as np
-import numpy.typing as npt
-from numba.np.arraymath import np_convolve
 from torch.utils.data import DataLoader
 
 from uu import get_root
