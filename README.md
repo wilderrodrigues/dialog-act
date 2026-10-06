@@ -8,21 +8,50 @@ Moreover, we explored the use of a pre-trained DistilBert model to finetune the 
 
 ## Setup
 
-Install Poetry 2.1+ and Python 3.13.15.
+To be able to run the project, you will need Python installed in your operating system. Any version in the range `>=3.13.15,<3.14`
+will suffice.
 
-To install PyEnv and Poetry, if necessary, please follow the official documentation:
+Once your Python installation is ready, please make sure you have the latest version of Poetry installed.
 
-* [Poetry](https://python-poetry.org/docs/).
-* [PyEnv](https://github.com/pyenv/pyenv#installation).
+### Poetry for Windows
+
+The installer script is available directly at install.python-poetry.org, and is developed in its own repository.
+The script can be executed directly (i.e. ‘curl python’) or downloaded and then executed from disk (e.g. in a CI environment).
+
+### Linux, macOS, Windows (WSL)
 
 ```sh
-pyenv install -s 3.13.15
-pyenv local 3.13.15 # or local, if you do not want to mess with your environment. 
-poetry env use "$(pyenv which python)"
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+### Windows (PowerShell)
+
+```sh
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | py -
+```
+
+If you run into issues, please refer to the official installation instructions: https://python-poetry.org/docs/#installation
+
+## Project Installation
+
+Once Python and Poetry are installed, please install the project dependencies. The command must be executed from the project root directory.
+
+```sh
 poetry install
 ```
 
-Run these commands from the project directory; `.python-version` selects the
-project interpreter. Poetry creates the environment in `.venv`. No global
-Python selection is required. Commit `poetry.lock` with the project.
+### Unit Tests
 
+To check that the delivered code is working as expected, yoou can run the unit tests:
+
+```sh
+poetry run pytest
+```
+
+## Project Structure
+
+We have split the project into two parts: `dialog`; and `recommender`. You will find mode information under the
+respective README files.
+
+* [Dialog Acts](./src/uu/msc/ai/mair/dialog/README.md)
+* [Recommender](./src/uu/msc/ai/mair/recommender/README.md)
