@@ -127,11 +127,14 @@ class DistilBertTokenEncoder(FrozenDistilBertEncoder):
         self.tokenizer = None
         self.model = None
 
-    def encode_sentence(self, utterance: str | list[str]) -> np.ndarray:
+    def encode_sentence(self, utterance: str) -> np.ndarray:
         encoded = self.get_tokenizer()(utterance, padding="max_length", truncation=True,
                                        max_length=self.max_tokens, return_tensors="np")
         ids_and_mask = np.stack([encoded["input_ids"], encoded["attention_mask"]], axis=1).astype(np.int64)
-        return ids_and_mask[0] if isinstance(utterance, str) else ids_and_mask
+        return ids_and_mask[0]
 
     def encode_sentences(self, utterances: list[str]) -> np.ndarray:
-        raise NotImplementedError("DistilBertTokenEncoder runs no model, so it has no sentence vectors.")
+        encoded = self.get_tokenizer()(utterances, padding="max_length", truncation=True,
+                                       max_length=self.max_tokens, return_tensors="np")
+        ids_and_mask = np.stack([encoded["input_ids"], encoded["attention_mask"]], axis=1).astype(np.int64)
+        return ids_and_mask

@@ -137,7 +137,7 @@ class DialogActsDataset(Dataset):
         if self.features is not None:
             return torch.from_numpy(self.features[idx]), one_hot_encoded
 
-        utterance_tokens = list(self.encoder.encode_sentence(utterance))
+        utterance_tokens = self.encoder.encode_sentence(utterance)
         tokens_idx = utterance_tokens + ([0] * (self.max_tokens - len(utterance_tokens))) if len(utterance_tokens) < self.max_tokens else utterance_tokens[:self.max_tokens]
 
         return torch.tensor(tokens_idx, dtype=torch.int32), one_hot_encoded
