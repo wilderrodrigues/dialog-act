@@ -19,6 +19,7 @@ from uu.msc.ai.mair.dialog.metrics.plot.utils import plot_confusion_matrix
 from uu.msc.ai.mair.dialog.model.finetuned_classifier import FineTunedDistilBertClassifier
 from uu.msc.ai.mair.dialog.model.nn_classifier import Conv1DClassifier
 from uu.msc.ai.mair.dialog.model.log_reg_classifier import LogRegModel
+from uu.msc.ai.mair.dialog.model.rule_based_classifier import RuleBasedModel
 
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, confusion_matrix, recall_score, precision_score
 import numpy as np
@@ -247,6 +248,40 @@ def evaluate_log_reg(
     disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
     plt.title("Confusion Matrix")
     plt.savefig(output_dir / "eval_log_reg_confusion_matrix.png")
+    plt.show()
+
+
+@app.command(name="eval-rule", help="Evaluate the rule-based baseline.")
+def evaluate_rule(
+    dataset_path: Annotated[Path, typer.Argument(help="Path to the dataset.")],
+    split_strategy: Annotated[str | None, typer.Option(help="Evaluate on the validation part of a 'vanilla' or 'grouped' split instead of the whole file.")] = None,
+    seed: Annotated[int, typer.Option(min=0, help="Random seed for the split.")] = DatasetFactory.SEED,
+    val_split: Annotated[float, typer.Option(help="Validation split ration.")] = DatasetFactory.VAL_SPLIT,
+    separator: Annotated[str, typer.Option(help="DAT file separator.")] = " ",
+) -> None:
+    if split_strategy is None:
+        mode = "Test"
+        utterances, acts, targets = DatasetFactory.load_test_dataset(data_path=dataset_path, separator=separator)
+    elif split_strategy in ("vanilla", "grouped"):
+        mode = "Validation"
+        _, utterances, _, acts, targets = nn_config[split_strategy](data_path=dataset_path, separator=separator,
+                                                                    split=val_split, seed=seed)
+    else:
+        raise typer.BadParameter(f"Invalid split strategy: {split_strategy}. Must be one of 'vanilla' or 'grouped'.")
+
+    predictions = RuleBasedModel().predict(utterances)
+    logging.info(f"{mode} Accuracy  : {accuracy_score(acts, predictions):.3f}")
+    logging.info(f"{mode} Balanced Accuracy  : {balanced_accuracy_score(acts, predictions):.3f}")
+
+    output_dir = get_root() / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    labels = list(targets)
+    conf_matrix = confusion_matrix(acts, predictions, labels=labels)
+    disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=labels)
+    disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
+    plt.title("Confusion Matrix")
+    plt.savefig(output_dir / "rule_based_confusion_matrix.png")
     plt.show()
 
 

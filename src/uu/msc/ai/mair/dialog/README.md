@@ -11,8 +11,11 @@ poetry run dialog-acts --help
 
 # Baseline Model
 
-The baseline model, a rule-based model built with hand-crafted features, can be found under [Baseline](./src/uu/msc/ai/mair/dialog/rule_base_code_remy.py).
-It will be refactored to be compliant with the rest of the codebase.
+```sh
+poetry run dialog-acts eval-rule ./data/dialog_acts.dat
+poetry run dialog-acts eval-rule ./data/dialog_acts.dat --split-strategy vanilla
+poetry run dialog-acts eval-rule ./data/dialog_acts.dat --split-strategy grouped
+```
 
 # Logistic Regression
 
