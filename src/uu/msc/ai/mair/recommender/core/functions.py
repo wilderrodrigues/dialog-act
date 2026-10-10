@@ -1,18 +1,19 @@
 import json
 import random
 from pathlib import Path
-from typing import Any
-
 import Levenshtein
 import re
 import pandas as pd
+import numpy as np
+import numpy.typing as npt
 from sklearn.metrics.pairwise import cosine_similarity
-from uu.msc.ai.mair.dialog.core.encoders import (FrozenDistilBertEncoder)
+from uu.msc.ai.mair.dialog.core.encoders import (EMBED_LEN, Encoder, SimpleEncoder, FrozenDistilBertEncoder,
+                                                 DistilBertTokenEncoder)
 
 PREFERENCES = ("pricerange", "area", "food")
 STOPWORDS = {"i", "want", "wanna", "looking", "restaurant", "place", "please", "food", "part", "town",
              "that", "serves", "serving", "with", "have", "find", "would", "like", "need", "something",
-             "somewhere", "what", "about", "there", "also", "thanks", "hello", "a"}
+             "somewhere", "what", "about", "there", "also", "thanks", "hello","a"}
 
 DONT_CARE = "dontcare"
 UNKNOWN = "unknown"
@@ -20,7 +21,7 @@ UNKNOWN = "unknown"
 VALUE_VECTORS = {}
 
 
-def load_slot_csv(csv_path: Path) -> dict[str, set]:
+def load_slot_csv(csv_path: Path):
     data = pd.read_csv(csv_path)
     slotdict = {}
     for item in PREFERENCES:
@@ -28,13 +29,14 @@ def load_slot_csv(csv_path: Path) -> dict[str, set]:
         slotdict[item] = set(columnitems)
     return slotdict
 
-
 def parse_sentence(sentence: str) -> list[str]:
     words = re.findall(r"[a-z']+", sentence.lower())
     return [word for word in words if word not in STOPWORDS]
 
 
-def keyword_matching(sentence: str, document: dict) -> dict[str, Any]:
+
+def keyword_matching(sentence: str, document: dict) -> list[str]:
+
     parsesentence = parse_sentence(sentence)
     max_words = max(len(value.split(" ")) for slots in PREFERENCES for value in document[slots])
     matches = {}
@@ -55,7 +57,10 @@ def keyword_matching(sentence: str, document: dict) -> dict[str, Any]:
     return matches
 
 
+
+
 def levenshtein_distance(sentence: str, document: dict, matched: dict, max_distance: int = 2) -> dict:
+
     parsesentence = parse_sentence(sentence)
 
     for i in range(len(parsesentence)):
@@ -89,8 +94,12 @@ def levenshtein_distance(sentence: str, document: dict, matched: dict, max_dista
     return matches
 
 
-# TODO it is really bad the encoding always guesses wrong something wrong with bert?
+
+
+
+#TODO it is really bad the encoding always guesses wrong something wrong with bert?
 def semantic_similarity(sentence: str, document: dict, matched: dict, encoder, threshold: float = 0.75) -> dict:
+
     parsesentence = parse_sentence(sentence)
 
     for i in range(len(parsesentence)):
