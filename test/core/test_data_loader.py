@@ -47,14 +47,39 @@ def test_load_and_split_vanilla() -> None:
 
 def test_load_and_split_grouped() -> None:
     dataset_file = get_root() / "test" / "resources" / "test_acts.dat"
-    # dataset_file = get_root() / "data" / "dialog_acts.dat"
 
-    utterances_train, utterances_val, _, _, targets = (
+    utterances_train, utterances_val, acts_train, acts_val, targets = (
         DatasetFactory.load_and_split_grouped(data_path=dataset_file, split=.5))
     assert utterances_train is not None
     assert utterances_val is not None
     assert utterances_train.shape == (10,)
     assert utterances_val.shape == (8,)
+    assert len(acts_train) == len(utterances_train)
+    assert len(acts_val) == len(utterances_val)
+    assert set(utterances_train).isdisjoint(utterances_val)
+    assert set(acts_train) == set(targets)
+
+
+def test_load_and_split_grouped_uses_requested_validation_ratio() -> None:
+    dataset_file = get_root() / "data" / "dialog_acts.dat"
+
+    utterances_train, utterances_val, acts_train, _, targets = (
+        DatasetFactory.load_and_split_grouped(data_path=dataset_file))
+
+    total = len(utterances_train) + len(utterances_val)
+    assert abs((len(utterances_val) / total) - DatasetFactory.VAL_SPLIT) < .01
+    assert set(utterances_train).isdisjoint(utterances_val)
+    assert set(acts_train) == set(targets)
+
+
+def test_load_and_split_grouped_is_deterministic() -> None:
+    dataset_file = get_root() / "test" / "resources" / "test_acts.dat"
+
+    first = DatasetFactory.load_and_split_grouped(data_path=dataset_file, split=.5)
+    second = DatasetFactory.load_and_split_grouped(data_path=dataset_file, split=.5)
+
+    for first_partition, second_partition in zip(first[:4], second[:4]):
+        assert np.array_equal(first_partition, second_partition)
 
 
 def test_dataset() -> None:
