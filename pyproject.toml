@@ -16,7 +16,8 @@ dependencies = [
     "seaborn",
     "scikit-learn",
     "shap",
-    "transformers"
+    "transformers",
+    "levenshtein (>=0.27.5,<0.28.0)"
 ]
 
 [project.scripts]
