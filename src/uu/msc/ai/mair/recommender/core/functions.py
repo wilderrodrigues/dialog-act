@@ -1,5 +1,6 @@
 import json
 import random
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -9,8 +10,27 @@ PREFERENCES = ("pricerange", "area", "food")
 DONT_CARE = "dontcare"
 UNKNOWN = "unknown"
 
-def keyword_matching(word: str, document: pd.DataFrame) -> list[str]:
-    pass
+DONT_CARE_PATTERNS = ("any", "dont care", "doesnt matter", "does not matter", "whatever")
+DONT_CARE_HINTS = {"pricerange": ("price",), "area": ("area", "part", "town"), "food": ("food", "type", "kind")}
+SYNONYMS = {"center": "centre", "moderately": "moderate", "cheaper": "cheap", "pricey": "expensive"}
+
+
+def keyword_matching(utterance: str, document: pd.DataFrame, asked_slot: str | None = None) -> dict[str, str]:
+    """Finds the preferences named in the utterance; 'any'/'dont care' goes to the slot it names, else the asked one."""
+    words = " ".join(SYNONYMS.get(word, word) for word in utterance.split())
+    found = {}
+    for slot in PREFERENCES:
+        # Longest values first, so 'modern european' wins over 'european'.
+        values = sorted((value for value in document[slot].unique() if value != UNKNOWN), key=len, reverse=True)
+        match = next((value for value in values if re.search(rf"\b{re.escape(value)}\b", words)), None)
+        if match is not None:
+            found[slot] = match
+
+    if any(re.search(rf"\b{pattern}\b", words) for pattern in DONT_CARE_PATTERNS):
+        hinted = [slot for slot, hints in DONT_CARE_HINTS.items() if any(hint in words for hint in hints)]
+        for slot in hinted or ([asked_slot] if asked_slot else []):
+            found.setdefault(slot, DONT_CARE)
+    return found
 
 
 def levenshtein_distance(word: str, document: pd.DataFrame) -> list[str]:
