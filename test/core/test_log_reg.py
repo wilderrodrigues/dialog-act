@@ -31,5 +31,3 @@ def test_log_reg_model() -> None:
     assert prediction is not None
 
     np.allclose(acts_val_keys, acts_pred_keys, rtol=1e-05, atol=1e-08)
-
-test_log_reg_model()
