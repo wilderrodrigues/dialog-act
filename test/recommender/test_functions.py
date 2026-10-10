@@ -3,8 +3,8 @@ from string import Formatter
 import pytest
 
 from uu import get_root
-from uu.msc.ai.mair.recommender.core.functions import (find_restaurants, generate_response, load_restaurants,
-                                                      load_templates)
+from uu.msc.ai.mair.recommender.core.functions import (DONT_CARE, find_restaurants, generate_response, keyword_matching,
+                                                      load_restaurants, load_templates)
 
 RESTAURANTS_FILE = get_root() / "test" / "resources" / "test_restaurants.csv"
 TEMPLATES_FILE = get_root() / "data" / "templates.json"
@@ -96,3 +96,23 @@ def test_transparency_without_reasons_or_variant_uses_the_plain_template(restaur
     chosen, _ = find_restaurants(restaurants, {"food": "italian"})
     assert generate_response(templates, "recommend", transparent=True, reasons=[], **chosen) ==            generate_response(templates, "recommend", **chosen)
     assert generate_response(templates, "askarea", transparent=True, reasons=["reasonbusyassignedseats"]) ==            templates["askarea"]
+
+
+def test_keyword_matching_finds_every_preference(restaurants) -> None:
+    assert keyword_matching("cheap thai food in the north", restaurants) == {"pricerange": "cheap", "area": "north",
+                                                                             "food": "thai"}
+
+
+def test_keyword_matching_uses_whole_words_and_synonyms(restaurants) -> None:
+    assert keyword_matching("northern food", restaurants) == {}
+    assert keyword_matching("something cheaper", restaurants) == {"pricerange": "cheap"}
+
+
+def test_keyword_matching_never_matches_unknown(restaurants) -> None:
+    assert keyword_matching("unknown", restaurants) == {}
+
+
+def test_dontcare_goes_to_the_named_or_asked_slot(restaurants) -> None:
+    assert keyword_matching("any part of town", restaurants) == {"area": DONT_CARE}
+    assert keyword_matching("i dont care", restaurants, asked_slot="pricerange") == {"pricerange": DONT_CARE}
+    assert keyword_matching("i dont care", restaurants) == {}

@@ -19,6 +19,7 @@ from uu.msc.ai.mair.dialog.model.finetuned_classifier import FineTunedDistilBert
 from uu.msc.ai.mair.dialog.model.nn_classifier import Conv1DClassifier, EmbeddingBagClassifier
 from uu.msc.ai.mair.dialog.model.log_reg_classifier import LogRegModel
 from uu.msc.ai.mair.dialog.model.rule_based_classifier import RuleBasedModel
+from uu.msc.ai.mair.recommender.core.dialog_manager import DialogManager
 
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, confusion_matrix, recall_score, precision_score
 import numpy as np
@@ -285,3 +286,16 @@ def evaluate_rule(
     plt.title("Confusion Matrix")
     plt.savefig(output_dir / "rule_based_confusion_matrix.png")
     plt.show()
+
+
+@app.command(name="chat", help="Talk to the restaurant recommender, using the rule-based dialog act classifier.")
+def chat(
+    restaurants_path: Annotated[Path, typer.Option(help="Path to restaurant_info.csv.")] = get_root() / "data" / "restaurant_info.csv",
+    templates_path: Annotated[Path, typer.Option(help="Path to the response templates.")] = get_root() / "data" / "templates.json",
+    seed: Annotated[int | None, typer.Option(help="Random seed for picking among matching restaurants.")] = None,
+    show_acts: Annotated[bool, typer.Option(help="Print the classified act and dialog state after every turn.")] = False,
+) -> None:
+    if seed is not None:
+        seed_everything(seed=seed)
+    DialogManager(classifier=RuleBasedModel(), restaurants_path=restaurants_path,
+                  templates_path=templates_path).run(show_acts=show_acts)
