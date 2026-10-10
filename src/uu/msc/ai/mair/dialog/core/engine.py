@@ -15,10 +15,12 @@ logging.basicConfig(level=logging.INFO)
 @torch.no_grad()
 def evaluate_model(model: torch.nn.Module, dataset_loader: DataLoader, device: torch.device, mode: str) -> tuple[float, npt.NDArray]:
     targets, predictions = [],[]
+    n_classes = None
     for utterances_input, acts_output in dataset_loader:
         utterances_input = utterances_input.to(device)
         acts_output = acts_output.to(device)
         preds = model(utterances_input)
+        n_classes = acts_output.shape[1]
 
         targets.append(acts_output.argmax(dim=1))
         predictions.append(preds.argmax(dim=1))
@@ -31,7 +33,7 @@ def evaluate_model(model: torch.nn.Module, dataset_loader: DataLoader, device: t
     accuracy = accuracy_score(detached_targets, detached_predictions)
     balanced_accuracy = balanced_accuracy_score(detached_targets, detached_predictions)
 
-    conf_matrix = confusion_matrix(detached_targets, detached_predictions)
+    conf_matrix = confusion_matrix(detached_targets, detached_predictions, labels=np.arange(n_classes))
     recall = recall_score(detached_targets, detached_predictions, average="micro", labels=np.unique(detached_predictions))
     precision = precision_score(detached_targets, detached_predictions, average="micro", labels=np.unique(detached_predictions))
 
@@ -46,10 +48,12 @@ def evaluate_model(model: torch.nn.Module, dataset_loader: DataLoader, device: t
 def calculate_loss_accuracy(model: torch.nn.Module, loss_fn: torch.nn.Module,
                             dataset_loader: DataLoader, device: torch.device, mode: str) -> tuple[float, npt.NDArray]:
     targets, predictions, losses = [],[],[]
+    n_classes = None
     for utterances_input, acts_output in dataset_loader:
         utterances_input = utterances_input.to(device)
         acts_output = acts_output.to(device)
         preds = model(utterances_input)
+        n_classes = acts_output.shape[1]
         loss = loss_fn(preds, acts_output)
         losses.append(loss.item())
 
@@ -65,7 +69,7 @@ def calculate_loss_accuracy(model: torch.nn.Module, loss_fn: torch.nn.Module,
     accuracy = accuracy_score(detached_targets, detached_predictions)
     balanced_accuracy = balanced_accuracy_score(detached_targets, detached_predictions)
 
-    conf_matrix = confusion_matrix(detached_targets, detached_predictions)
+    conf_matrix = confusion_matrix(detached_targets, detached_predictions, labels=np.arange(n_classes))
     recall = recall_score(detached_targets, detached_predictions, average="micro", labels=np.unique(detached_predictions))
     precision = precision_score(detached_targets, detached_predictions, average="micro", labels=np.unique(detached_predictions))
 

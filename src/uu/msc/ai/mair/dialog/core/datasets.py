@@ -92,23 +92,28 @@ class DatasetFactory:
         utterances = dialog_df.values[:, 1]
         acts = dialog_df.values[:, 0]
 
-        utterances_train = None
-        utterances_val = None
-        acts_train = None
-        acts_val = None
+        n_splits = max(2, round(1 / split))
+        grouped_dataset = StratifiedGroupKFold(
+            n_splits=n_splits,
+            random_state=seed if shuffle else None,
+            shuffle=shuffle,
+        )
+        candidates = list(grouped_dataset.split(utterances, acts, utterances))
 
-        grouped_dataset = StratifiedGroupKFold(n_splits=2, random_state=seed, shuffle=shuffle)
-        for idx, (train_index, val_index) in enumerate(grouped_dataset.split(utterances, acts, utterances)):
-            utterances_train = utterances[train_index]
-            utterances_val = utterances[val_index]
-            acts_train = acts[train_index]
-            acts_val = acts[val_index]
-            # TODO [Wilder]:
-            # We are deliberately not using the second fold here. The idea is that fold-1 has the duplicates, which
-            # are not included in fold-2. Then, the second fold will be the other way around. This is to make
-            # sure that the model is trained with both folds, but without leaking the data from train to validation.
-            # We will discuss this with Professor Roxana.
-            break
+        all_acts = set(acts)
+        candidates_with_all_training_acts = [
+            indices for indices in candidates if set(acts[indices[0]]) == all_acts
+        ]
+        eligible_candidates = candidates_with_all_training_acts or candidates
+        train_index, val_index = min(
+            eligible_candidates,
+            key=lambda indices: abs((len(indices[1]) / len(utterances)) - split),
+        )
+
+        utterances_train = utterances[train_index]
+        utterances_val = utterances[val_index]
+        acts_train = acts[train_index]
+        acts_val = acts[val_index]
 
         return utterances_train, utterances_val, acts_train, acts_val, targets
 
