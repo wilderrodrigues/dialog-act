@@ -1,0 +1,30 @@
+{
+  "welcome": "Hello, welcome to the Cambridge restaurant system! You can ask for restaurants by area, price range or food type. How may I help you?",
+  "askarea": "What part of town do you have in mind?",
+  "askfoodtype": "What kind of food would you like?",
+  "askpricerange": "Which price range do you prefer?",
+
+  "confirmarea": "I did not recognize {givenarea}. Did you mean {correctedarea}?",
+  "confirmfoodtype": "I did not recognize {givenfoodtype}. Did you mean {correctedfoodtype}?",
+  "confirmpricerange": "I did not recognize {givenpricerange}. Did you mean {correctedpricerange}?",
+
+  "recommend": "I recommend {restaurantname}, a {pricerange} {food} restaurant in the {area} part of town.",
+  "recommendwithreasons": "I recommend {restaurantname}, a {pricerange} {food} restaurant in the {area} part of town, because {reasons}.",
+  "alternative": "How about {restaurantname}, a {pricerange} {food} restaurant in the {area} part of town?",
+  "alternativewithreasons": "How about {restaurantname}, a {pricerange} {food} restaurant in the {area} part of town? It fits because {reasons}.",
+  "nomatch": "I'm sorry, no restaurant matches your preferences.",
+  "noalternatives": "I'm sorry, there are no other restaurants that match your preferences.",
+
+  "reasoncheapgoodfoodtouristic": "it is cheap and has good food, which makes it touristic",
+  "reasonromaniannottouristic": "it serves romanian food, which makes it not touristic",
+  "reasonbusyassignedseats": "it is busy, so it has assigned seats",
+  "reasonlongstaynochildren": "it allows a long stay, which makes it unsuitable for children",
+  "reasonbusynotromantic": "it is busy, which makes it not romantic",
+  "reasonlongstayromantic": "it allows a long stay, which makes it romantic",
+
+  "givephone": "The phone number of {restaurantname} is {phone}.",
+  "giveaddress": "Sure, {restaurantname} is on {addr}.",
+  "givepostcode": "The post code of {restaurantname} is {postcode}.",
+  "bye": "Goodbye, enjoy your meal!",
+  "notunderstood": "Sorry, I did not understand that. Could you please repeat that?"
+}

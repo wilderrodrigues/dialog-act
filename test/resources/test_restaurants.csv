@@ -1,0 +1,6 @@
+restaurantname,pricerange,area,food,phone,addr,postcode
+the first thai,cheap,north,thai,01223 000001,1 north road,c.b 1
+the second thai,cheap,north,thai,01223 000002,2 north road,c.b 2
+the expensive thai,expensive,north,thai,01223 000003,3 north road,c.b 3
+the unknown thai,cheap,,thai,,4 somewhere road,c.b 4
+the cheap italian,cheap,south,italian,01223 000005,5 south road,c.b 5
