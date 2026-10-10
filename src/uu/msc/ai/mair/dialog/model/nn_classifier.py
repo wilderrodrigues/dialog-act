@@ -3,6 +3,21 @@ from torch import nn
 from torch.nn import functional as F
 
 
+class EmbeddingBagClassifier(nn.Module):
+    def __init__(self, vocabulary_size: int, n_classes: int, embed_len: int=256, padding_idx: int=0):
+        super().__init__()
+        self.embedding_layer = nn.EmbeddingBag(
+            num_embeddings=vocabulary_size,
+            embedding_dim=embed_len,
+            mode="mean",
+            padding_idx=padding_idx,
+        )
+        self.linear = nn.Linear(embed_len, n_classes)
+
+    def forward(self, batch: torch.Tensor) -> torch.Tensor:
+        return self.linear(self.embedding_layer(batch))
+
+
 class Conv1DClassifier(nn.Module):
     def __init__(self, vocabulary_size: int, n_classes: int, max_tokens: int=50, embed_len: int=256):
         super().__init__()

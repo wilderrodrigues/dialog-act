@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import numpy as np
 import torch
 from torch import nn
 from torch.optim import Adam
@@ -17,7 +16,7 @@ from uu.msc.ai.mair.dialog.core.engine import train_loop, evaluate_model
 from uu.msc.ai.mair.dialog.core.runtime import DeviceChoice, seed_everything, select_device
 from uu.msc.ai.mair.dialog.metrics.plot.utils import plot_confusion_matrix
 from uu.msc.ai.mair.dialog.model.finetuned_classifier import FineTunedDistilBertClassifier
-from uu.msc.ai.mair.dialog.model.nn_classifier import Conv1DClassifier
+from uu.msc.ai.mair.dialog.model.nn_classifier import Conv1DClassifier, EmbeddingBagClassifier
 from uu.msc.ai.mair.dialog.model.log_reg_classifier import LogRegModel
 from uu.msc.ai.mair.dialog.model.rule_based_classifier import RuleBasedModel
 
@@ -80,7 +79,9 @@ def train_nn(
     vocab_size = len(encoder.get_vocabulary())
 
     if isinstance(encoder, SimpleEncoder):
-        conv_classifier = Conv1DClassifier(vocabulary_size=vocab_size, n_classes=len(targets))
+        padding_idx = encoder.get_vocabulary()["[PAD]"]
+        conv_classifier = EmbeddingBagClassifier(vocabulary_size=vocab_size, n_classes=len(targets),
+                                                  padding_idx=padding_idx)
     elif isinstance(encoder, DistilBertTokenEncoder):
         conv_classifier = FineTunedDistilBertClassifier(vocabulary_size=vocab_size, n_classes=len(targets),
                                                         max_tokens=encoder.max_tokens)
@@ -176,8 +177,6 @@ def prompt_nn(
         with torch.no_grad():
             index = model(encode_one(encoder, utterance, targets).to(selected_device)).argmax(dim=1).item()
         print(acts[index])
-
-
 
 
 @app.command(name="train-logreg", help="Train a Logistic Regression model")
@@ -283,7 +282,3 @@ def evaluate_rule(
     plt.title("Confusion Matrix")
     plt.savefig(output_dir / "rule_based_confusion_matrix.png")
     plt.show()
-
-
-
-

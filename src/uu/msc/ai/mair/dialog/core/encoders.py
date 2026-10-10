@@ -119,13 +119,6 @@ class FrozenDistilBertEncoder(Encoder):
         return embeddings
 
 class DistilBertTokenEncoder(FrozenDistilBertEncoder):
-    def __init__(self, model_name: str = DISTILBERT_NAME, max_tokens: int = MAX_TOKENS) -> None:
-        hf_logging.set_verbosity_error()
-
-        self.model_name = model_name
-        self.max_tokens = max_tokens
-        self.tokenizer = None
-        self.model = None
 
     def encode_sentence(self, utterance: str) -> np.ndarray:
         encoded = self.get_tokenizer()(utterance, padding="max_length", truncation=True,

@@ -17,7 +17,7 @@ class LogRegModel:
         self.acts = None 
         self.targets = None
 
-    def _build_bow_vector(self,data):
+    def _build_bow_vector(self, data: npt.NDArray) -> npt.NDArray:
         return self.vectorizer.fit_transform(data)
 
     def train(self, split: float, seed) -> tuple[npt.NDArray, npt.NDArray]:
@@ -33,7 +33,7 @@ class LogRegModel:
         acts_pred = self.model.predict(vectorized_test)
         return acts_val, acts_pred
     
-    def predict(self, utterance):
+    def predict(self, utterance: list[str]) -> npt.NDArray:
         bow = self.vectorizer.transform(utterance)
         prediction = self.model.predict(bow)
         return prediction
