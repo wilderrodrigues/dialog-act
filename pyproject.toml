@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-dialog-acts = "uu.msc.ai.mair.dialog.cli:app"
+dialog-acts = "uu.msc.ai.mair.cli:app"
 
 [tool.poetry]
 packages = [{include = "uu", from = "src"}]
