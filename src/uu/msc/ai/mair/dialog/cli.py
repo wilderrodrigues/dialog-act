@@ -185,27 +185,48 @@ def train_log_reg(
     dataset_path: Annotated[Path, typer.Argument(help="Path to the dataset.")],
     num_iterations: Annotated[int, typer.Option(min=100, help="Maximum number of iterations.")] = 1000,
     seed: Annotated[int, typer.Option(min=0, help="Random seed for the training.")] = DatasetFactory.SEED,
-    val_split: Annotated[float, typer.Option(help="Validation split ration.")] = DatasetFactory.VAL_SPLIT,
+    val_split: Annotated[float, typer.Option(help="Validation split ratio.")] = DatasetFactory.VAL_SPLIT,
     separator: Annotated[str, typer.Option(help="DAT file separator.")] = " ",
+    split_strategy: Annotated[str, typer.Option(help="Must be 'vanilla' or 'grouped'")] = "vanilla",
+    encoder: Annotated[str, typer.Option(help="Must be 'simple' (bag of words) or 'bert' (frozen DistilBERT)")] = "simple",
 ) -> None:
     seed_everything(seed=seed)
-
-    logreg = LogRegModel(dataset_path,num_iterations=num_iterations)
-    acts_val, acts_pred = logreg.train(split=val_split,seed=seed)
-
-
+ 
+    if split_strategy not in ("vanilla", "grouped"):
+        raise ValueError(f"Invalid split strategy: {split_strategy}. Must be 'vanilla' or 'grouped'.")
+    if encoder not in ("simple", "bert"):
+        raise ValueError(f"Invalid encoder: {encoder}. Must be 'simple' or 'bert'.")
+ 
+    split_strategy = DatasetFactory.load_and_split_vanilla if split_strategy == "vanilla" else DatasetFactory.load_and_split_grouped
+    utterances_train, utterances_val, acts_train, acts_val, targets = split_strategy(data_path=dataset_path,
+                                                                            split=val_split,
+                                                                            seed=seed)
+    
+    if encoder == "simple":
+        logreg = LogRegModel(num_iterations=num_iterations,use_bow=True,seed=seed)
+        logreg.fit(utterances_train, acts_train, targets)
+        acts_pred = logreg.predict(utterances_val)
+    else:
+        frozen = nn_config["bert"]()
+        frozen.init_tokenizer(None)
+        utterances_train_frozen = frozen.encode_sentences(list(utterances_train))
+        utterances_val_frozen = frozen.encode_sentences(list(utterances_val))
+        logreg = LogRegModel(num_iterations=num_iterations,use_bow=False,seed=seed)
+        logreg.fit(utterances_train_frozen, acts_train, targets)
+        acts_pred = logreg.predict(utterances_val_frozen)
+ 
     output_dir = get_root() / "output_log_reg"
     output_dir.mkdir(parents=True, exist_ok=True)
-
-
-    with open(output_dir / "log_reg", "wb") as f:
+ 
+    with open(output_dir / f"log_reg_{encoder}.pkl", "wb") as f:
         pickle.dump(logreg, f)
-    labels = list(logreg.targets)
-    conf_matrix = confusion_matrix(acts_val, acts_pred,labels=labels)
-    disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=logreg.targets)
+ 
+    labels = list(targets)
+    conf_matrix = confusion_matrix(acts_val, acts_pred, labels=labels)
+    disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=labels)
     disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
-    plt.title("Confusion Matrix")
-    plt.savefig(output_dir / "log_reg_confusion_matrix.png")
+    plt.title(f"Confusion Matrix ({encoder})")
+    plt.savefig(output_dir / f"log_reg_{encoder}_confusion_matrix.png")
     plt.show()
 
 
@@ -214,17 +235,26 @@ def evaluate_log_reg(
     dataset_path: Annotated[Path, typer.Argument(help="Path to the dataset.")],
     model_path: Annotated[Path, typer.Argument(help="Path to the trained NN model.")],
     seed: Annotated[int, typer.Option(min=0, help="Random seed for the training.")] = DatasetFactory.SEED,
-    val_split: Annotated[float, typer.Option(help="Validation split ration.")] = DatasetFactory.VAL_SPLIT,
-    separator: Annotated[str, typer.Option(help="DAT file separator.")] = " ",
+    encoder: Annotated[str, typer.Option(help="Must match training: 'simple', 'bert' or 'finetune'")] = "simple",
+
 ) -> None:
     seed_everything(seed=seed)
 
     with open(model_path, 'rb') as file:
-        dialog_model_log_reg = pickle.load(file)
+        log_reg = pickle.load(file)
 
     mode="Test"
     utterances_test, acts_test, targets = DatasetFactory.load_test_dataset(data_path=dataset_path)
-    predictions_test_set = dialog_model_log_reg.predict(utterances_test)
+
+    if encoder == "simple":
+        vectorized_test_utterances = utterances_test
+    elif encoder == "bert":
+        frozen = nn_config["bert"]()
+        frozen.init_tokenizer(None)
+        vectorized_test_utterances = frozen.encode_sentences(list(utterances_test))
+
+    
+    predictions_test_set = log_reg.predict(vectorized_test_utterances)
 
     accuracy = accuracy_score(acts_test, predictions_test_set)
     balanced_accuracy = balanced_accuracy_score(acts_test, predictions_test_set)
@@ -242,13 +272,14 @@ def evaluate_log_reg(
     output_dir.mkdir(parents=True, exist_ok=True)
 
 
-    labels = list(dialog_model_log_reg.targets)
-    conf_matrix = confusion_matrix(acts_test, predictions_test_set,labels=labels)
+    labels = list(log_reg.targets)
+    conf_matrix = confusion_matrix(acts_test, predictions_test_set, labels=labels)
     disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=labels)
     disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
-    plt.title("Confusion Matrix")
-    plt.savefig(output_dir / "eval_log_reg_confusion_matrix.png")
+    plt.title(f"Confusion Matrix ({encoder})")
+    plt.savefig(output_dir / f"eval_log_reg_{encoder}_confusion_matrix.png")
     plt.show()
+
 
 
 @app.command(name="eval-rule", help="Evaluate the rule-based baseline.")
