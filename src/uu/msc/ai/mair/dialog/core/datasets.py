@@ -123,7 +123,7 @@ class DialogActsDataset(Dataset):
         self.targets = targets
         self.max_tokens = max_tokens
 
-        self.features = (encoder.encode_sentence(list(utterances))
+        self.features = (encoder.encode_sentence(utterances.tolist())
                          if isinstance(encoder, FrozenDistilBertEncoder) else None)
 
     def __len__(self) -> int:
