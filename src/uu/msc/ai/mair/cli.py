@@ -185,26 +185,29 @@ def train_log_reg(
     num_iterations: Annotated[int, typer.Option(min=100, help="Maximum number of iterations.")] = 1000,
     seed: Annotated[int, typer.Option(min=0, help="Random seed for the training.")] = DatasetFactory.SEED,
     val_split: Annotated[float, typer.Option(help="Validation split ration.")] = DatasetFactory.VAL_SPLIT,
+    encoder: Annotated[str, typer.Option(help="Features for the model. Must be 'bow' or 'bert'")] = "bow",
+    split_strategy: Annotated[str, typer.Option(help="Split strategy to be used. Must be 'vanilla' or 'grouped'")] = "vanilla",
     separator: Annotated[str, typer.Option(help="DAT file separator.")] = " ",
 ) -> None:
     seed_everything(seed=seed)
-
-    logreg = LogRegModel(dataset_path,num_iterations=num_iterations)
-    acts_val, acts_pred = logreg.train(split=val_split,seed=seed)
+    if split_strategy not in ("vanilla", "grouped"):
+        raise typer.BadParameter(f"Invalid split strategy: {split_strategy}. Must be one of 'vanilla' or 'grouped'.")
+    logreg = LogRegModel(dataset_path,num_iterations=num_iterations, encoder=encoder)
+    acts_val, acts_pred = logreg.train(split = val_split,seed = seed, split_strategy = split_strategy)
 
 
     output_dir = get_root() / "output_log_reg"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-
-    with open(output_dir / "log_reg", "wb") as f:
+    name = f"log_reg_{encoder}_{split_strategy}"
+    with open(output_dir / name , "wb") as f:
         pickle.dump(logreg, f)
     labels = list(logreg.targets)
     conf_matrix = confusion_matrix(acts_val, acts_pred,labels=labels)
     disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=logreg.targets)
     disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
     plt.title("Confusion Matrix")
-    plt.savefig(output_dir / "log_reg_confusion_matrix.png")
+    plt.savefig(output_dir / f"{name}_confusion_matrix.png")
     plt.show()
 
 
