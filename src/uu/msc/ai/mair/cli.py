@@ -111,13 +111,14 @@ def train_nn(
     logging.info(f"Trainable parameters : {n_parameters:,}")
 
     output_dir = get_root() / "output_nn"
+    output_dir.mkdir(parents=True, exist_ok=True)
     model_name = f"nn_{encoder}_{split_strategy}"
     output_dir.mkdir(parents=True, exist_ok=True)
     selected_device = select_device(device)
     balanced_accuracy, confusion_matrix = train_loop(conv_classifier, loss_fn, optimizer, train_loader, val_loader,
                                                      epochs, selected_device, output_dir, model_name)
     logging.info(f"Training time : {time.perf_counter() - start_time:.1f} s")
-    plot_confusion_matrix(confusion_matrix, targets, output_dir)
+    plot_confusion_matrix(confusion_matrix, targets, output_dir / "nn_confusion_matrix.png")
 
 @app.command(name="eval-nn", help="Evaluate a model.")
 def evaluate_nn(
@@ -145,7 +146,7 @@ def evaluate_nn(
     balanced_accuracy, confusion_matrix  = evaluate_model(model=dialog_model, dataset_loader=test_loader, device=select_device(device), mode="Test")
     output_dir = get_root() / "output_nn"
     output_dir.mkdir(parents=True, exist_ok=True)
-    plot_confusion_matrix(confusion_matrix, targets, output_dir)
+    plot_confusion_matrix(confusion_matrix, targets, output_dir / "nn_confusion_matrix.png")
 
 
 @app.command(name="prompt-nn", help="Classify typed utterances until 'exit' is entered.")
@@ -226,11 +227,7 @@ def train_log_reg(
 
     labels = list(logreg.targets)
     conf_matrix = confusion_matrix(acts_val, acts_pred, labels=labels)
-    disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=logreg.targets)
-    disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
-    plt.title("Confusion Matrix")
-    plt.savefig(output_dir / f"{name}_confusion_matrix.png")
-    plt.show()
+    plot_confusion_matrix(conf_matrix, logreg.targets, output_dir / f"{name}_confusion_matrix.png")
 
 
 @app.command(name="eval-logreg", help="Train a Logistic Regression model")
@@ -275,11 +272,7 @@ def evaluate_logreg(
 
     labels = list(log_reg.targets)
     conf_matrix = confusion_matrix(acts_test, predictions_test_set, labels=labels)
-    disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=labels)
-    disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
-    plt.title(f"Confusion Matrix ({encoder})")
-    plt.savefig(output_dir / f"eval_log_reg_{encoder}_confusion_matrix.png")
-    plt.show()
+    plot_confusion_matrix(conf_matrix, log_reg.targets, output_dir / "rule_based_confusion_matrix.png")
 
 
 @app.command(name="rule-based", help="Evaluate the rule-based baseline.")
@@ -315,11 +308,7 @@ def rule_based(
 
     labels = list(targets)
     conf_matrix = confusion_matrix(acts, predictions, labels=labels)
-    disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=labels)
-    disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
-    plt.title("Confusion Matrix")
-    plt.savefig(output_dir / "rule_based_confusion_matrix.png")
-    plt.show()
+    plot_confusion_matrix(conf_matrix, targets, output_dir / "rule_based_confusion_matrix.png")
 
 
 @app.command(name="chat", help="Talk to the restaurant recommender, using the rule-based dialog act classifier.")

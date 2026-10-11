@@ -12,9 +12,12 @@ def plot_confusion_matrix(confusion_matrix: npt.NDArray | None, targets_map: dic
     if confusion_matrix is not None:
         logging.info("Plotting Confusion Matrix...")
         display_labels = [target for target, _ in sorted(targets_map.items(), key=lambda item: item[1])]
+        figure_size = max(8, len(display_labels) * .75)
+        figure, axes = plt.subplots(figsize=(figure_size, figure_size), constrained_layout=True)
         disp = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix, display_labels=display_labels)
-        disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
+        disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical", values_format="d", ax=axes)
 
-        plt.title("Confusion Matrix")
-        plt.savefig(output_dir / "nn_confusion_matrix.png")
+        axes.set_title("Confusion Matrix")
+        figure.savefig(output_dir, dpi=150, bbox_inches="tight")
         plt.show()
+        plt.close(figure)
