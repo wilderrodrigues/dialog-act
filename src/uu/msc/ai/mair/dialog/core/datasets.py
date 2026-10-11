@@ -19,7 +19,7 @@ class DatasetFactory:
     SEED: int = 42
 
     @staticmethod
-    def load_dataframe(data_path: Path, separator: str, drop_null: bool = False) -> pd.DataFrame:
+    def load_dataframe(data_path: Path, separator: str, drop_null: bool = True) -> pd.DataFrame:
         columns = ["act", "utterance"]
         data = []
         with data_path.open() as fd:
