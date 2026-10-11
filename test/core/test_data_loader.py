@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 
 from uu import get_root
 from uu.msc.ai.mair.dialog.core.datasets import DialogActsDataset, DatasetFactory
-from uu.msc.ai.mair.dialog.core.encoders import SimpleEncoder
+from uu.msc.ai.mair.dialog.core.encoders import DistilBertTokenEncoder, SimpleEncoder
 
 random.seed(DatasetFactory.SEED)
 torch.manual_seed(DatasetFactory.SEED)
@@ -118,3 +118,28 @@ def test_dataset() -> None:
     assert test_labels is not None
     assert test_features.shape == (2, 50)
     assert test_labels.shape == (2, 5)
+
+
+def test_dataset_batches_distilbert_token_features() -> None:
+    class StubDistilBertTokenEncoder(DistilBertTokenEncoder):
+        def __init__(self) -> None:
+            self.max_tokens = 4
+
+        def encode_sentences(self, utterances: list[str]) -> np.ndarray:
+            return np.arange(len(utterances) * 2 * self.max_tokens, dtype=np.int64).reshape(
+                len(utterances), 2, self.max_tokens
+            )
+
+    utterances = np.asarray(["first", "second", "third"])
+    acts = np.asarray(["inform", "request", "inform"])
+    dataset = DialogActsDataset(
+        encoder=StubDistilBertTokenEncoder(),
+        utterances=utterances,
+        acts=acts,
+        targets={"inform": 0, "request": 1},
+    )
+
+    assert dataset.features.shape == (3, 2, 4)
+    features, label = dataset[2]
+    assert features.shape == (2, 4)
+    assert label.shape == (2,)

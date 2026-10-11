@@ -39,6 +39,14 @@ nn_config = {"simple": SimpleEncoder, "bert": FrozenDistilBertEncoder, "finetune
              "vanilla": DatasetFactory.load_and_split_vanilla, "grouped": DatasetFactory.load_and_split_grouped}
 
 
+def encode_one(encoder: Encoder, utterance: str, targets: dict[str, int]) -> torch.Tensor:
+    # Reuses the training pipeline, but dataset need a label per utterance.
+    dataset = DialogActsDataset(encoder=encoder, utterances=np.asarray([utterance]),
+                                acts=np.asarray([next(iter(targets))]), targets=targets)
+    features, _ = next(iter(DataLoader(dataset, batch_size=1)))
+    return features
+
+
 @app.command(name="train-nn", help="Train a Neural Network model.")
 def train_nn(
     dataset_path: Annotated[Path, typer.Argument(help="Path to the dataset.")],
@@ -61,34 +69,34 @@ def train_nn(
     if encoder not in nn_config:
         raise ValueError(f"Invalid encoder: {encoder}. Must be one of 'simple', 'bert' or 'finetune'.'")
 
-    split_strategy = DatasetFactory.load_and_split_vanilla if split_strategy == "vanilla" else DatasetFactory.load_and_split_grouped
-    utterances_train, utterances_val, acts_train, acts_val, targets = split_strategy(data_path=dataset_path,
+    split_strategy_loader = DatasetFactory.load_and_split_vanilla if split_strategy == "vanilla" else DatasetFactory.load_and_split_grouped
+    utterances_train, utterances_val, acts_train, acts_val, targets = split_strategy_loader(data_path=dataset_path,
                                                                             split=val_split,
                                                                             seed=seed)
 
     dataset = DatasetFactory.load_dataframe(dataset_path, separator=separator)
-    encoder = nn_config[encoder]()
-    encoder.init_tokenizer(dataset)
+    feature_encoder = nn_config[encoder]()
+    feature_encoder.init_tokenizer(dataset)
     start_time = time.perf_counter()
-    train_dataset = DialogActsDataset(encoder=encoder, utterances=utterances_train, acts=acts_train, targets=targets)
-    val_dataset = DialogActsDataset(encoder=encoder, utterances=utterances_val, acts=acts_val, targets=targets)
+    train_dataset = DialogActsDataset(encoder=feature_encoder, utterances=utterances_train, acts=acts_train, targets=targets)
+    val_dataset = DialogActsDataset(encoder=feature_encoder, utterances=utterances_val, acts=acts_val, targets=targets)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
     loss_fn = nn.CrossEntropyLoss()
-    vocab_size = len(encoder.get_vocabulary())
+    vocab_size = len(feature_encoder.get_vocabulary())
 
-    if isinstance(encoder, SimpleEncoder):
-        padding_idx = encoder.get_vocabulary()["[PAD]"]
+    if isinstance(feature_encoder, SimpleEncoder):
+        padding_idx = feature_encoder.get_vocabulary()["[PAD]"]
         conv_classifier = EmbeddingBagClassifier(vocabulary_size=vocab_size, n_classes=len(targets),
                                                   padding_idx=padding_idx)
-    elif isinstance(encoder, DistilBertTokenEncoder):
+    elif isinstance(feature_encoder, DistilBertTokenEncoder):
         conv_classifier = FineTunedDistilBertClassifier(vocabulary_size=vocab_size, n_classes=len(targets),
-                                                        max_tokens=encoder.max_tokens)
-    elif isinstance(encoder, FrozenDistilBertEncoder):
+                                                        max_tokens=feature_encoder.max_tokens)
+    elif isinstance(feature_encoder, FrozenDistilBertEncoder):
         conv_classifier = Conv1DClassifier(vocabulary_size=vocab_size, n_classes=len(targets),
-                                           max_tokens=encoder.max_tokens, embed_len=EMBED_LEN)
+                                           max_tokens=feature_encoder.max_tokens, embed_len=EMBED_LEN)
         conv_classifier.embedding_layer = nn.Identity()
     else:
         raise ValueError("Invalid encoder type.")
@@ -102,13 +110,15 @@ def train_nn(
     n_parameters = sum(parameter.numel() for parameter in conv_classifier.parameters())
     logging.info(f"Trainable parameters : {n_parameters:,}")
 
-    output_dir = get_root() / "output"
+    output_dir = get_root() / "output_nn"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    model_name = f"nn_{encoder}_{split_strategy}"
     output_dir.mkdir(parents=True, exist_ok=True)
     selected_device = select_device(device)
     balanced_accuracy, confusion_matrix = train_loop(conv_classifier, loss_fn, optimizer, train_loader, val_loader,
-                                                     epochs, selected_device, output_dir)
+                                                     epochs, selected_device, output_dir, model_name)
     logging.info(f"Training time : {time.perf_counter() - start_time:.1f} s")
-    plot_confusion_matrix(confusion_matrix, targets, output_dir)
+    plot_confusion_matrix(confusion_matrix, targets, output_dir / "nn_confusion_matrix.png")
 
 @app.command(name="eval-nn", help="Evaluate a model.")
 def evaluate_nn(
@@ -128,22 +138,15 @@ def evaluate_nn(
     utterances_test, acts_test, targets = DatasetFactory.load_test_dataset(data_path=dataset_path)
 
     dataset = DatasetFactory.load_dataframe(dataset_path, separator=separator)
-    encoder = nn_config[encoder]()
-    encoder.init_tokenizer(dataset)
-    test_dataset = DialogActsDataset(encoder=encoder, utterances=utterances_test, acts=acts_test, targets=targets)
+    feature_encoder = nn_config[encoder]()
+    feature_encoder.init_tokenizer(dataset)
+    test_dataset = DialogActsDataset(encoder=feature_encoder, utterances=utterances_test, acts=acts_test, targets=targets)
 
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
     balanced_accuracy, confusion_matrix  = evaluate_model(model=dialog_model, dataset_loader=test_loader, device=select_device(device), mode="Test")
-    output_dir = get_root() / "output"
+    output_dir = get_root() / "output_nn"
     output_dir.mkdir(parents=True, exist_ok=True)
-    plot_confusion_matrix(confusion_matrix, targets, output_dir)
-
-def encode_one(encoder: Encoder, utterance: str, targets: dict[str, int]) -> torch.Tensor:
-    # Reuses the training pipeline, but dataset need a label per utterance.
-    dataset = DialogActsDataset(encoder=encoder, utterances=np.asarray([utterance]),
-                                acts=np.asarray([next(iter(targets))]), targets=targets)
-    features, _ = next(iter(DataLoader(dataset, batch_size=1)))
-    return features
+    plot_confusion_matrix(confusion_matrix, targets, output_dir / "nn_confusion_matrix.png")
 
 
 @app.command(name="prompt-nn", help="Classify typed utterances until 'exit' is entered.")
@@ -188,56 +191,55 @@ def train_log_reg(
     val_split: Annotated[float, typer.Option(help="Validation split ratio.")] = DatasetFactory.VAL_SPLIT,
     separator: Annotated[str, typer.Option(help="DAT file separator.")] = " ",
     split_strategy: Annotated[str, typer.Option(help="Must be 'vanilla' or 'grouped'")] = "vanilla",
-    encoder: Annotated[str, typer.Option(help="Must be 'simple' (bag of words) or 'bert' (frozen DistilBERT)")] = "simple",
+    encoder: Annotated[str, typer.Option(help="Must be 'simple' - for bag-of-words - or 'bert' (frozen DistilBERT)")] = "simple",
 ) -> None:
-    seed_everything(seed=seed)
-
     if split_strategy not in ("vanilla", "grouped"):
-        raise ValueError(f"Invalid split strategy: {split_strategy}. Must be 'vanilla' or 'grouped'.")
+        raise typer.BadParameter(f"Invalid split strategy: {split_strategy}. Must be one of 'vanilla' or 'grouped'.")
     if encoder not in ("simple", "bert"):
         raise ValueError(f"Invalid encoder: {encoder}. Must be 'simple' or 'bert'.")
 
-    split_strategy = DatasetFactory.load_and_split_vanilla if split_strategy == "vanilla" else DatasetFactory.load_and_split_grouped
-    utterances_train, utterances_val, acts_train, acts_val, targets = split_strategy(data_path=dataset_path,
-                                                                            split=val_split,
-                                                                            seed=seed)
+    seed_everything(seed=seed)
 
-    if encoder == "simple":
-        logreg = LogRegModel(num_iterations=num_iterations,use_bow=True,seed=seed)
-        logreg.fit(utterances_train, acts_train, targets)
-        acts_pred = logreg.predict(utterances_val)
-    else:
-        frozen = nn_config["bert"]()
-        frozen.init_tokenizer(None)
-        utterances_train_frozen = frozen.encode_sentences(list(utterances_train))
-        utterances_val_frozen = frozen.encode_sentences(list(utterances_val))
-        logreg = LogRegModel(num_iterations=num_iterations,use_bow=False,seed=seed)
-        logreg.fit(utterances_train_frozen, acts_train, targets)
-        acts_pred = logreg.predict(utterances_val_frozen)
+    logreg = LogRegModel(dataset_path=dataset_path, separator=separator, num_iterations=num_iterations, encoder=encoder)
+    acts_val, acts_pred = logreg.train(split=val_split, seed=seed, split_strategy=split_strategy)
+
+
+    if split_strategy not in ("vanilla", "grouped"):
+        raise ValueError(f"Invalid split strategy: {split_strategy}. Must be 'vanilla' or 'grouped'.")
 
     output_dir = get_root() / "output_log_reg"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    with open(output_dir / f"log_reg_{encoder}.pkl", "wb") as f:
+    name = f"log_reg_{encoder}_{split_strategy}"
+    with open(output_dir / f"{name}.pkl", "wb") as f:
         pickle.dump(logreg, f)
 
-    labels = list(targets)
+    accuracy = accuracy_score(acts_val, acts_pred)
+    balanced_accuracy = balanced_accuracy_score(acts_val, acts_pred)
+
+    recall = recall_score(acts_val, acts_pred, average="micro", labels=np.unique(acts_pred))
+    precision = precision_score(acts_val, acts_pred, average="micro",
+                                labels=np.unique(acts_pred))
+    logging.info(f"Validation Accuracy: {accuracy:.3f}")
+    logging.info(f"Validation Balanced Accuracy: {balanced_accuracy:.3f}")
+    logging.info(f"Validation Recall: {recall:.3f}")
+    logging.info(f"Validation Precision: {precision:.3f}")
+
+    labels = list(logreg.targets)
     conf_matrix = confusion_matrix(acts_val, acts_pred, labels=labels)
-    disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=labels)
-    disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
-    plt.title(f"Confusion Matrix ({encoder})")
-    plt.savefig(output_dir / f"log_reg_{encoder}_confusion_matrix.png")
-    plt.show()
+    plot_confusion_matrix(conf_matrix, logreg.targets, output_dir / f"{name}_confusion_matrix.png")
 
 
-@app.command(name="evaluate-log-reg", help="Train a Logistic Regression model")
-def evaluate_log_reg(
+@app.command(name="eval-logreg", help="Train a Logistic Regression model")
+def evaluate_logreg(
     dataset_path: Annotated[Path, typer.Argument(help="Path to the dataset.")],
     model_path: Annotated[Path, typer.Argument(help="Path to the trained NN model.")],
     seed: Annotated[int, typer.Option(min=0, help="Random seed for the training.")] = DatasetFactory.SEED,
-    encoder: Annotated[str, typer.Option(help="Must match training: 'simple', 'bert' or 'finetune'")] = "simple",
-
+    encoder: Annotated[str, typer.Option(help="Must match training: 'simple' for bow or 'finetune'")] = "simple",
 ) -> None:
+    if encoder not in ("simple", "bert"):
+        raise ValueError(f"Invalid encoder: {encoder}. Must be 'simple' or 'bert'.")
+
     seed_everything(seed=seed)
 
     with open(model_path, 'rb') as file:
@@ -253,79 +255,71 @@ def evaluate_log_reg(
         frozen.init_tokenizer(None)
         vectorized_test_utterances = frozen.encode_sentences(list(utterances_test))
 
-
     predictions_test_set = log_reg.predict(vectorized_test_utterances)
 
     accuracy = accuracy_score(acts_test, predictions_test_set)
     balanced_accuracy = balanced_accuracy_score(acts_test, predictions_test_set)
 
-    conf_matrix = confusion_matrix(acts_test, predictions_test_set)
     recall = recall_score(acts_test, predictions_test_set, average="micro", labels=np.unique(predictions_test_set))
     precision = precision_score(acts_test, predictions_test_set, average="micro", labels=np.unique(predictions_test_set))
     logging.info(f"{mode} Accuracy  : {accuracy:.3f}")
     logging.info(f"{mode} Balanced Accuracy  : {balanced_accuracy:.3f}")
     logging.info(f"{mode} Recall  : {recall:.3f}")
     logging.info(f"{mode} Precision  : {precision:.3f}")
-    conf_matrix = confusion_matrix(acts_test, predictions_test_set)
 
     output_dir = get_root() / "output_log_reg"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-
     labels = list(log_reg.targets)
     conf_matrix = confusion_matrix(acts_test, predictions_test_set, labels=labels)
-    disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=labels)
-    disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
-    plt.title(f"Confusion Matrix ({encoder})")
-    plt.savefig(output_dir / f"eval_log_reg_{encoder}_confusion_matrix.png")
-    plt.show()
+    plot_confusion_matrix(conf_matrix, log_reg.targets, output_dir / "rule_based_confusion_matrix.png")
 
 
-
-@app.command(name="eval-rule", help="Evaluate the rule-based baseline.")
-def evaluate_rule(
+@app.command(name="rule-based", help="Evaluate the rule-based baseline.")
+def rule_based(
     dataset_path: Annotated[Path, typer.Argument(help="Path to the dataset.")],
-    split_strategy: Annotated[str | None, typer.Option(help="Evaluate on the validation part of a 'vanilla' or 'grouped' split instead of the whole file.")] = None,
+    mode: Annotated[str, typer.Option(help="Evaluate the rule based model. The mode is either 'eval' or 'test'.")] = "eval",
+    split_strategy: Annotated[str, typer.Option(help="Evaluate on the validation part of a 'vanilla' or 'grouped' split instead of the whole file.")] = "vanilla",
     seed: Annotated[int, typer.Option(min=0, help="Random seed for the split.")] = DatasetFactory.SEED,
     val_split: Annotated[float, typer.Option(help="Validation split ration.")] = DatasetFactory.VAL_SPLIT,
     separator: Annotated[str, typer.Option(help="DAT file separator.")] = " ",
 ) -> None:
-    if split_strategy is None:
-        mode = "Test"
+    if mode.lower() == "test":
         utterances, acts, targets = DatasetFactory.load_test_dataset(data_path=dataset_path, separator=separator)
-    elif split_strategy in ("vanilla", "grouped"):
-        mode = "Validation"
-        _, utterances, _, acts, targets = nn_config[split_strategy](data_path=dataset_path, separator=separator,
-                                                                    split=val_split, seed=seed)
+    elif mode.lower() == "eval":
+        if split_strategy.lower() in ("vanilla", "grouped"):
+            _, utterances, _, acts, targets = nn_config[split_strategy](data_path=dataset_path, separator=separator,
+                                                                        split=val_split, seed=seed)
+        else:
+            raise typer.BadParameter(f"Invalid split strategy: {split_strategy}. Must be one of 'vanilla' or 'grouped'.")
     else:
-        raise typer.BadParameter(f"Invalid split strategy: {split_strategy}. Must be one of 'vanilla' or 'grouped'.")
+        raise typer.BadParameter(f"Invalid mode type: {mode}. Must be one of 'eval' or 'test'.")
 
     predictions = RuleBasedModel().predict(utterances)
+    recall = recall_score(acts, predictions, average="micro", labels=np.unique(predictions))
+    precision = precision_score(acts, predictions, average="micro", labels=np.unique(predictions))
     logging.info(f"{mode} Accuracy  : {accuracy_score(acts, predictions):.3f}")
     logging.info(f"{mode} Balanced Accuracy  : {balanced_accuracy_score(acts, predictions):.3f}")
+    logging.info(f"{mode} Recall  : {recall:.3f}")
+    logging.info(f"{mode} Precision  : {precision:.3f}")
 
-    output_dir = get_root() / "output"
+    output_dir = get_root() / "output_rube_based"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     labels = list(targets)
     conf_matrix = confusion_matrix(acts, predictions, labels=labels)
-    disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=labels)
-    disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
-    plt.title("Confusion Matrix")
-    plt.savefig(output_dir / "rule_based_confusion_matrix.png")
-    plt.show()
+    plot_confusion_matrix(conf_matrix, targets, output_dir / "rule_based_confusion_matrix.png")
 
 
 @app.command(name="chat", help="Talk to the restaurant recommender, using the rule-based dialog act classifier.")
 def chat(
     restaurants_path: Annotated[Path, typer.Option(help="Path to restaurant_info_extended.csv.")] = get_root() / "data" / "restaurant_info_extended.csv",
     templates_path: Annotated[Path, typer.Option(help="Path to the response templates.")] = get_root() / "data" / "templates.json",
-    seed: Annotated[int | None, typer.Option(help="Random seed for picking among matching restaurants.")] = None,
+    seed: Annotated[int | None, typer.Option(help="Random seed for picking among matching restaurants.")] = DatasetFactory.SEED,
     show_acts: Annotated[bool, typer.Option(help="Print the classified act and dialog state after every turn.")] = False,
     log_dir: Annotated[Path, typer.Option(help="Directory for the JSON interaction logs.")] = get_root() / "output" / "dialogs",
     transparent: Annotated[bool, typer.Option(help="Explain the reasoning behind a recommendation.")] = True,
 ) -> None:
-    if seed is not None:
-        seed_everything(seed=seed)
+    seed_everything(seed=seed)
     DialogManager(classifier=RuleBasedModel(), restaurants_path=restaurants_path,
                   templates_path=templates_path, transparent=transparent).run(log_dir=log_dir, show_acts=show_acts)
