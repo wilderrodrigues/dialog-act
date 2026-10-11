@@ -41,7 +41,6 @@ BYE_WORDS = ("bye", "goodbye")
 @dataclass
 class DialogContext:
     preferences: dict[str, str | None] = field(default_factory=lambda: dict.fromkeys(SLOT_ORDER))
-    # The additional requirements of the reasoning step, e.g. {"romantic": True}; None until they have been asked.
     requirements: dict[str, bool] | None = None
     alternatives: list[Candidate] = field(default_factory=list)
     restaurant: pd.Series | None = None
@@ -74,20 +73,16 @@ class DialogManager:
             preferences = keyword_matching(utterance, self.restaurants, SLOT_OF_STATE.get(state))
             requirements = extract_requirements(utterance)
             if preferences or requirements or state == State.WELCOME:
-                # inform (or null from Welcome): store what we learned and walk down the decision diamonds.
                 context.preferences.update(preferences)
                 if requirements:
                     context.requirements = {**(context.requirements or {}), **requirements}
                 return self._next_question(context)
-            # repeat / null / affirm without new information: stay and ask again.
             return state, self.respond(ASK_TEMPLATE[SLOT_OF_STATE[state]])
 
         if state == State.ASK_ADDITIONAL:
-            # inform / dontcare / negate: whatever requirements were named (possibly none) are now known.
             preferences = keyword_matching(utterance, self.restaurants)
             requirements = extract_requirements(utterance)
             if act == "affirm" and not (preferences or requirements):
-                # "yes" without saying which: ask again.
                 return state, self.respond("askadditional")
             context.preferences.update(preferences)
             context.requirements = requirements
@@ -97,7 +92,6 @@ class DialogManager:
             preferences = keyword_matching(utterance, self.restaurants)
             requirements = extract_requirements(utterance)
             if preferences or requirements:
-                # The user changed a preference ("how about chinese food", "a romantic one"): look up again.
                 context.preferences.update(preferences)
                 context.requirements = {**(context.requirements or {}), **requirements}
                 return self._suggest(context)
@@ -110,17 +104,14 @@ class DialogManager:
         return state, context.last_utterance
 
     def _next_question(self, context: DialogContext) -> tuple[State, str]:
-        # The diamonds "Area known?", "Type food known?" and "Price range known?".
         for slot in SLOT_ORDER:
             if context.preferences[slot] is None:
                 return ASK_STATE[slot], self.respond(ASK_TEMPLATE[slot])
-        # The diamond "Additional requirements known?".
         if context.requirements is None:
             return State.ASK_ADDITIONAL, self.respond("askadditional")
         return self._suggest(context)
 
     def _suggest(self, context: DialogContext) -> tuple[State, str]:
-        # Apply reasoning rules & filter: the lookup on the preferences, then the rules on every candidate.
         chosen, others = find_restaurants(self.restaurants, context.preferences)
         matches = [] if chosen is None else [chosen, *others]
         requirements = context.requirements or {}
@@ -138,7 +129,6 @@ class DialogManager:
         wanted = " and ".join(self.respond(f"{name}{str(value).lower()}") for name, value in requirements.items())
         if not conflicts:
             return self.respond("nomatchrequirements", requirements=wanted)
-        # Contradicting rules leave a property unknown; tell the user why the closest restaurant was not chosen.
         restaurant, name, reasons = conflicts[0]
         explanation = self.respond("reasonseparator").join(self.respond(reason) for reason in reasons)
         return self.respond("nomatchconflict", requirements=wanted, explanation=explanation,

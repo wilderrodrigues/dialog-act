@@ -15,13 +15,13 @@ class Rule:
     antecedent: Callable[[pd.Series], bool]
     consequent: str
     value: bool
-    reason: str  # The template that explains the rule to the user.
+    reason: str
 
 
 @dataclass
 class Candidate:
     restaurant: pd.Series
-    reasons: list[str]  # Reason templates for the requested properties, used by the transparent recommendation.
+    reasons: list[str]
 
 
 RULES = (
@@ -34,7 +34,6 @@ RULES = (
     Rule(6, lambda r: r["length of stay"] == "long", "romantic", True, "reasonlongstayromantic"),
 )
 
-# Keywords per property; a negation word earlier in the same clause flips the requested value.
 REQUIREMENT_PATTERNS = {"touristic": r"touristic|touristy|tourists?",
                         "assigned_seats": r"assigned seat(?:s|ing)?|assigned",
                         "children": r"children|child|kids?|famil(?:y|ies)",
