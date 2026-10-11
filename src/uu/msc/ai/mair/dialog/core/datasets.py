@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 
 import torch.nn.functional as F
 
-from uu.msc.ai.mair.dialog.core.encoders import Encoder, FrozenDistilBertEncoder
+from uu.msc.ai.mair.dialog.core.encoders import Encoder, FrozenDistilBertEncoder, DistilBertTokenEncoder
 
 
 class DatasetFactory:
@@ -52,8 +52,6 @@ class DatasetFactory:
         acts = np.asarray(dialog_df.values[:,0])
 
         return utterances, acts, targets
-
-
     
     @staticmethod
     def load_and_split_vanilla_bow(bow_vector: Any, acts: npt.NDArray,
@@ -128,8 +126,12 @@ class DialogActsDataset(Dataset):
         self.targets = targets
         self.max_tokens = max_tokens
 
-        self.features = (encoder.encode_sentence(utterances.tolist())
-                         if isinstance(encoder, FrozenDistilBertEncoder) else None)
+        if isinstance(encoder, DistilBertTokenEncoder):
+            self.features = encoder.encode_sentences(utterances.tolist())
+        elif isinstance(encoder, FrozenDistilBertEncoder):
+            self.features = encoder.encode_sentence(utterances.tolist())
+        else:
+            self.features = None
 
     def __len__(self) -> int:
         return len(self.utterances)
@@ -139,6 +141,7 @@ class DialogActsDataset(Dataset):
         tensor_act = torch.tensor(self.targets[act], dtype=torch.long)
 
         one_hot_encoded = F.one_hot(tensor_act, num_classes=len(self.targets)).to(torch.float)
+
         if self.features is not None:
             return torch.from_numpy(self.features[idx]), one_hot_encoded
 
