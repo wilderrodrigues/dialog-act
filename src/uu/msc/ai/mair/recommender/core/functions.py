@@ -30,7 +30,6 @@ def keyword_matching(utterance: str, document: dict[str, set], asked_slot: str |
     words = " ".join(SYNONYMS.get(word, word) for word in utterance.split())
     found = {}
     for slot in PREFERENCES:
-        # Longest values first, so 'modern european' wins over 'european'.
         values = sorted((value for value in document[slot] if value != UNKNOWN), key=len, reverse=True)
         match = next((value for value in values if re.search(rf"\b{re.escape(value)}\b", words)), None)
         if match is not None:
@@ -140,7 +139,7 @@ def find_restaurants(restaurants: pd.DataFrame,
     matches = restaurants
     for slot in PREFERENCES:
         value = preferences.get(slot)
-        if value is not None and value != DONT_CARE:  # restaurants are only recommended when the area does not matter.
+        if value is not None and value != DONT_CARE:
             matches = matches[matches[slot] == value]
 
     if matches.empty:

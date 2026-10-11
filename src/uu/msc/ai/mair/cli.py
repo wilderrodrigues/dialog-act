@@ -38,7 +38,6 @@ nn_config = {"simple": SimpleEncoder, "bert": FrozenDistilBertEncoder, "finetune
 
 
 def encode_one(encoder: Encoder, utterance: str, targets: dict[str, int]) -> torch.Tensor:
-    # Reuses the training pipeline, but dataset need a label per utterance.
     dataset = DialogActsDataset(encoder=encoder, utterances=np.asarray([utterance]),
                                 acts=np.asarray([next(iter(targets))]), targets=targets)
     features, _ = next(iter(DataLoader(dataset, batch_size=1)))

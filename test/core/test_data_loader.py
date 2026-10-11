@@ -19,7 +19,6 @@ def test_data_loader() -> None:
     assert dialog_df.size > 0
     assert ["act", "utterance"] in dialog_df.columns.values
 
-    # The slice means to test the first 4 rows on column 0 (acts)
     assert set(dialog_df.values[:4,0].tolist()).issubset({"inform", "inform", "affirm", "request"})
 
 def test_targets_map() -> None:

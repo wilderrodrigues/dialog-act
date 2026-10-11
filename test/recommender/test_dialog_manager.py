@@ -99,7 +99,6 @@ def test_reasoning_can_be_hidden() -> None:
 
 def test_contradiction_is_explained_when_nothing_else_matches() -> None:
     manager, context = make_manager(), DialogContext()
-    # the gardenia: the only romanian restaurant, busy and long stay -> romantic is both True and False.
     manager.step(State.WELCOME, "moderate romanian food in the west", context)
     state, utterance, _ = manager.step(State.ASK_ADDITIONAL, "romantic please", context)
     assert state == State.SUGGEST and context.restaurant is None
