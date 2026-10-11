@@ -23,8 +23,6 @@ from uu.msc.ai.mair.recommender.core.dialog_manager import DialogManager
 
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, confusion_matrix, recall_score, precision_score
 import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.metrics import ConfusionMatrixDisplay
 
 
 from typing import Annotated
@@ -167,7 +165,7 @@ def prompt_nn(
     encoder = nn_config[encoder]()
     encoder.init_tokenizer(DatasetFactory.load_dataframe(dataset_path, separator=" "))
 
-    print("Type an utterance to classify it, or 'exit' to quit.")
+    logging.info("Type an utterance to classify it, or 'exit' to quit.")
     while True:
         try:
             utterance = input("> ").strip().lower()
@@ -180,7 +178,7 @@ def prompt_nn(
 
         with torch.no_grad():
             index = model(encode_one(encoder, utterance, targets).to(selected_device)).argmax(dim=1).item()
-        print(acts[index])
+        logging.info(acts[index])
 
 
 @app.command(name="train-logreg", help="Train a Logistic Regression model")

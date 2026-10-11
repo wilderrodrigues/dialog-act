@@ -5,6 +5,7 @@ from typing import Callable
 
 import pandas as pd
 
+
 PROPERTIES = ("touristic", "assigned_seats", "children", "romantic")
 
 

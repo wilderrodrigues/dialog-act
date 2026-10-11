@@ -1,7 +1,7 @@
 # Dialog Acts Classification
 
-The project is based on the [Dialog Acts Classification](https://github.com/facebookresearch/ParlAI/tree/main/projects/dialog_acts)
-project from the ParlAI repository.
+This project was developed for an assignment for the course Methods in Artificial Intelligence Research, from the
+Master's Programme of the Utrecht University, The Netherlands.
 
 ## Usage
 
