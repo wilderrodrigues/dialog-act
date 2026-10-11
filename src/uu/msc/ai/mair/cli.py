@@ -19,6 +19,7 @@ from uu.msc.ai.mair.dialog.model.finetuned_classifier import FineTunedDistilBert
 from uu.msc.ai.mair.dialog.model.nn_classifier import Conv1DClassifier, EmbeddingBagClassifier
 from uu.msc.ai.mair.dialog.model.log_reg_classifier import LogRegModel
 from uu.msc.ai.mair.dialog.model.rule_based_classifier import RuleBasedModel
+from uu.msc.ai.mair.recommender.core.dialog_manager import DialogManager
 
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, confusion_matrix, recall_score, precision_score
 import numpy as np
@@ -185,26 +186,29 @@ def train_log_reg(
     num_iterations: Annotated[int, typer.Option(min=100, help="Maximum number of iterations.")] = 1000,
     seed: Annotated[int, typer.Option(min=0, help="Random seed for the training.")] = DatasetFactory.SEED,
     val_split: Annotated[float, typer.Option(help="Validation split ration.")] = DatasetFactory.VAL_SPLIT,
+    encoder: Annotated[str, typer.Option(help="Features for the model. Must be 'bow' or 'bert'")] = "bow",
+    split_strategy: Annotated[str, typer.Option(help="Split strategy to be used. Must be 'vanilla' or 'grouped'")] = "vanilla",
     separator: Annotated[str, typer.Option(help="DAT file separator.")] = " ",
 ) -> None:
     seed_everything(seed=seed)
-
-    logreg = LogRegModel(dataset_path,num_iterations=num_iterations)
-    acts_val, acts_pred = logreg.train(split=val_split,seed=seed)
+    if split_strategy not in ("vanilla", "grouped"):
+        raise typer.BadParameter(f"Invalid split strategy: {split_strategy}. Must be one of 'vanilla' or 'grouped'.")
+    logreg = LogRegModel(dataset_path,num_iterations=num_iterations, encoder=encoder)
+    acts_val, acts_pred = logreg.train(split = val_split,seed = seed, split_strategy = split_strategy)
 
 
     output_dir = get_root() / "output_log_reg"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-
-    with open(output_dir / "log_reg", "wb") as f:
+    name = f"log_reg_{encoder}_{split_strategy}"
+    with open(output_dir / name , "wb") as f:
         pickle.dump(logreg, f)
     labels = list(logreg.targets)
     conf_matrix = confusion_matrix(acts_val, acts_pred,labels=labels)
     disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=logreg.targets)
     disp.plot(cmap=plt.cm.Blues, xticks_rotation="vertical")
     plt.title("Confusion Matrix")
-    plt.savefig(output_dir / "log_reg_confusion_matrix.png")
+    plt.savefig(output_dir / f"{name}_confusion_matrix.png")
     plt.show()
 
 
@@ -282,3 +286,16 @@ def evaluate_rule(
     plt.title("Confusion Matrix")
     plt.savefig(output_dir / "rule_based_confusion_matrix.png")
     plt.show()
+
+
+@app.command(name="chat", help="Talk to the restaurant recommender, using the rule-based dialog act classifier.")
+def chat(
+    restaurants_path: Annotated[Path, typer.Option(help="Path to restaurant_info.csv.")] = get_root() / "data" / "restaurant_info.csv",
+    templates_path: Annotated[Path, typer.Option(help="Path to the response templates.")] = get_root() / "data" / "templates.json",
+    seed: Annotated[int | None, typer.Option(help="Random seed for picking among matching restaurants.")] = None,
+    show_acts: Annotated[bool, typer.Option(help="Print the classified act and dialog state after every turn.")] = False,
+) -> None:
+    if seed is not None:
+        seed_everything(seed=seed)
+    DialogManager(classifier=RuleBasedModel(), restaurants_path=restaurants_path,
+                  templates_path=templates_path).run(show_acts=show_acts)
