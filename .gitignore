@@ -56,4 +56,6 @@ tmp/
 temp/
 
 output
+output_nn
 output_log_reg
+output_rube_based

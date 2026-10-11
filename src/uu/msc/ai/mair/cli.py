@@ -39,6 +39,14 @@ nn_config = {"simple": SimpleEncoder, "bert": FrozenDistilBertEncoder, "finetune
              "vanilla": DatasetFactory.load_and_split_vanilla, "grouped": DatasetFactory.load_and_split_grouped}
 
 
+def encode_one(encoder: Encoder, utterance: str, targets: dict[str, int]) -> torch.Tensor:
+    # Reuses the training pipeline, but dataset need a label per utterance.
+    dataset = DialogActsDataset(encoder=encoder, utterances=np.asarray([utterance]),
+                                acts=np.asarray([next(iter(targets))]), targets=targets)
+    features, _ = next(iter(DataLoader(dataset, batch_size=1)))
+    return features
+
+
 @app.command(name="train-nn", help="Train a Neural Network model.")
 def train_nn(
     dataset_path: Annotated[Path, typer.Argument(help="Path to the dataset.")],
@@ -61,34 +69,34 @@ def train_nn(
     if encoder not in nn_config:
         raise ValueError(f"Invalid encoder: {encoder}. Must be one of 'simple', 'bert' or 'finetune'.'")
 
-    split_strategy = DatasetFactory.load_and_split_vanilla if split_strategy == "vanilla" else DatasetFactory.load_and_split_grouped
-    utterances_train, utterances_val, acts_train, acts_val, targets = split_strategy(data_path=dataset_path,
+    split_strategy_loader = DatasetFactory.load_and_split_vanilla if split_strategy == "vanilla" else DatasetFactory.load_and_split_grouped
+    utterances_train, utterances_val, acts_train, acts_val, targets = split_strategy_loader(data_path=dataset_path,
                                                                             split=val_split,
                                                                             seed=seed)
 
     dataset = DatasetFactory.load_dataframe(dataset_path, separator=separator)
-    encoder = nn_config[encoder]()
-    encoder.init_tokenizer(dataset)
+    feature_encoder = nn_config[encoder]()
+    feature_encoder.init_tokenizer(dataset)
     start_time = time.perf_counter()
-    train_dataset = DialogActsDataset(encoder=encoder, utterances=utterances_train, acts=acts_train, targets=targets)
-    val_dataset = DialogActsDataset(encoder=encoder, utterances=utterances_val, acts=acts_val, targets=targets)
+    train_dataset = DialogActsDataset(encoder=feature_encoder, utterances=utterances_train, acts=acts_train, targets=targets)
+    val_dataset = DialogActsDataset(encoder=feature_encoder, utterances=utterances_val, acts=acts_val, targets=targets)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
     loss_fn = nn.CrossEntropyLoss()
-    vocab_size = len(encoder.get_vocabulary())
+    vocab_size = len(feature_encoder.get_vocabulary())
 
-    if isinstance(encoder, SimpleEncoder):
-        padding_idx = encoder.get_vocabulary()["[PAD]"]
+    if isinstance(feature_encoder, SimpleEncoder):
+        padding_idx = feature_encoder.get_vocabulary()["[PAD]"]
         conv_classifier = EmbeddingBagClassifier(vocabulary_size=vocab_size, n_classes=len(targets),
                                                   padding_idx=padding_idx)
-    elif isinstance(encoder, DistilBertTokenEncoder):
+    elif isinstance(feature_encoder, DistilBertTokenEncoder):
         conv_classifier = FineTunedDistilBertClassifier(vocabulary_size=vocab_size, n_classes=len(targets),
-                                                        max_tokens=encoder.max_tokens)
-    elif isinstance(encoder, FrozenDistilBertEncoder):
+                                                        max_tokens=feature_encoder.max_tokens)
+    elif isinstance(feature_encoder, FrozenDistilBertEncoder):
         conv_classifier = Conv1DClassifier(vocabulary_size=vocab_size, n_classes=len(targets),
-                                           max_tokens=encoder.max_tokens, embed_len=EMBED_LEN)
+                                           max_tokens=feature_encoder.max_tokens, embed_len=EMBED_LEN)
         conv_classifier.embedding_layer = nn.Identity()
     else:
         raise ValueError("Invalid encoder type.")
@@ -129,22 +137,15 @@ def evaluate_nn(
     utterances_test, acts_test, targets = DatasetFactory.load_test_dataset(data_path=dataset_path)
 
     dataset = DatasetFactory.load_dataframe(dataset_path, separator=separator)
-    encoder = nn_config[encoder]()
-    encoder.init_tokenizer(dataset)
-    test_dataset = DialogActsDataset(encoder=encoder, utterances=utterances_test, acts=acts_test, targets=targets)
+    feature_encoder = nn_config[encoder]()
+    feature_encoder.init_tokenizer(dataset)
+    test_dataset = DialogActsDataset(encoder=feature_encoder, utterances=utterances_test, acts=acts_test, targets=targets)
 
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
     balanced_accuracy, confusion_matrix  = evaluate_model(model=dialog_model, dataset_loader=test_loader, device=select_device(device), mode="Test")
-    output_dir = get_root() / "output"
+    output_dir = get_root() / "output_nn"
     output_dir.mkdir(parents=True, exist_ok=True)
     plot_confusion_matrix(confusion_matrix, targets, output_dir)
-
-def encode_one(encoder: Encoder, utterance: str, targets: dict[str, int]) -> torch.Tensor:
-    # Reuses the training pipeline, but dataset need a label per utterance.
-    dataset = DialogActsDataset(encoder=encoder, utterances=np.asarray([utterance]),
-                                acts=np.asarray([next(iter(targets))]), targets=targets)
-    features, _ = next(iter(DataLoader(dataset, batch_size=1)))
-    return features
 
 
 @app.command(name="prompt-nn", help="Classify typed utterances until 'exit' is entered.")
@@ -232,8 +233,8 @@ def train_log_reg(
     plt.show()
 
 
-@app.command(name="evaluate-log-reg", help="Train a Logistic Regression model")
-def evaluate_log_reg(
+@app.command(name="eval-logreg", help="Train a Logistic Regression model")
+def evaluate_logreg(
     dataset_path: Annotated[Path, typer.Argument(help="Path to the dataset.")],
     model_path: Annotated[Path, typer.Argument(help="Path to the trained NN model.")],
     seed: Annotated[int, typer.Option(min=0, help="Random seed for the training.")] = DatasetFactory.SEED,
@@ -298,6 +299,8 @@ def rule_based(
                                                                         split=val_split, seed=seed)
         else:
             raise typer.BadParameter(f"Invalid split strategy: {split_strategy}. Must be one of 'vanilla' or 'grouped'.")
+    else:
+        raise typer.BadParameter(f"Invalid mode type: {mode}. Must be one of 'eval' or 'test'.")
 
     predictions = RuleBasedModel().predict(utterances)
     recall = recall_score(acts, predictions, average="micro", labels=np.unique(predictions))
