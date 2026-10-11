@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 from pathlib import Path
 import json
 from datetime import datetime   
@@ -7,10 +7,10 @@ import pandas as pd
 import logging
 
 from uu.msc.ai.mair.recommender.core.functions import (find_restaurants, generate_response, keyword_matching,
-                                                      load_restaurants, load_templates)
+                                                      load_restaurants, load_templates, levenshtein_distance, semantic_similarity)
 from uu.msc.ai.mair.recommender.core.inference_engine import Predictor
 from uu.msc.ai.mair.recommender.core.reasoning import Candidate, apply_requirements, choose, extract_requirements
-
+from uu.msc.ai.mair.dialog.core.encoders import FrozenDistilBertEncoder
 
 class State(IntEnum):
     WELCOME = 1
@@ -22,6 +22,10 @@ class State(IntEnum):
     GIVE_INFO = 7
     TERMINATE = 8
 
+class Fallback(StrEnum):
+    NONE = "none"
+    LEVENSHTEIN = "levenshtein"
+    BERT = "bert"
 
 SLOT_ORDER = ("area", "food", "pricerange")
 ASK_STATE = {"area": State.ASK_AREA, "food": State.ASK_FOOD, "pricerange": State.ASK_PRICE}
@@ -45,11 +49,26 @@ class DialogContext:
 
 class DialogManager:
     def __init__(self, classifier: Predictor, restaurants_path: Path, templates_path: Path,
-                 transparent: bool = True) -> None:
+                 transparent: bool = True, fallback: Fallback = Fallback.LEVENSHTEIN) -> None:
         self.classifier = classifier
         self.restaurants = load_restaurants(restaurants_path)
         self.templates = load_templates(templates_path)
         self.transparent = transparent
+        self.fallback = fallback
+        self.encoder = None
+        if fallback == Fallback.BERT:
+            self.encoder = FrozenDistilBertEncoder()
+            self.encoder.init_tokenizer(None)
+
+    def _extract(self, utterance : str, asked_slot: str| None) ->dict[str, str]:
+        preferences = keyword_matching(utterance, self.restaurants, asked_slot)
+        if self.fallback == Fallback.LEVENSHTEIN:
+            closest = levenshtein_distance(utterance, self.restaurants, preferences)
+        elif self.fallback == Fallback.BERT:
+            closest = semantic_similarity(utterance, self.restaurants, preferences, self.encoder)
+        else:
+            closest = {}
+        return preferences | {slot: value for slot, (value, _) in closest.items()}
 
     def respond(self, name: str, reasons: list[str] | None = None, **slots: str) -> str:
         return generate_response(self.templates, name, transparent=self.transparent, reasons=reasons, **slots)
@@ -66,7 +85,7 @@ class DialogManager:
             return State.WELCOME, self.respond("welcome")
 
         if state in (State.WELCOME, State.ASK_AREA, State.ASK_FOOD, State.ASK_PRICE):
-            preferences = keyword_matching(utterance, self.restaurants, SLOT_OF_STATE.get(state))
+            preferences = self._extract(utterance, SLOT_OF_STATE.get(state))
             requirements = extract_requirements(utterance)
             if preferences or requirements or state == State.WELCOME:
                 context.preferences.update(preferences)
