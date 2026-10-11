@@ -318,13 +318,14 @@ def evaluate_rule(
 
 @app.command(name="chat", help="Talk to the restaurant recommender, using the rule-based dialog act classifier.")
 def chat(
-    restaurants_path: Annotated[Path, typer.Option(help="Path to restaurant_info.csv.")] = get_root() / "data" / "restaurant_info.csv",
+    restaurants_path: Annotated[Path, typer.Option(help="Path to restaurant_info_extended.csv.")] = get_root() / "data" / "restaurant_info_extended.csv",
     templates_path: Annotated[Path, typer.Option(help="Path to the response templates.")] = get_root() / "data" / "templates.json",
     seed: Annotated[int | None, typer.Option(help="Random seed for picking among matching restaurants.")] = None,
     show_acts: Annotated[bool, typer.Option(help="Print the classified act and dialog state after every turn.")] = False,
     log_dir: Annotated[Path, typer.Option(help="Directory for the JSON interaction logs.")] = get_root() / "output" / "dialogs",
+    transparent: Annotated[bool, typer.Option(help="Explain the reasoning behind a recommendation.")] = True,
 ) -> None:
     if seed is not None:
         seed_everything(seed=seed)
-    DialogManager( classifier=RuleBasedModel(), restaurants_path=restaurants_path,
-                  templates_path=templates_path).run(log_dir = log_dir, show_acts=show_acts)
+    DialogManager(classifier=RuleBasedModel(), restaurants_path=restaurants_path,
+                  templates_path=templates_path, transparent=transparent).run(log_dir=log_dir, show_acts=show_acts)
