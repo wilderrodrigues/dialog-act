@@ -27,7 +27,6 @@ SYNONYMS = {"center": "centre", "moderately": "moderate", "cheaper": "cheap", "p
 
 
 def keyword_matching(utterance: str, document: dict[str, set], asked_slot: str | None = None) -> dict[str, Sized]:
-    """Finds the preferences named in the utterance; 'any'/'dont care' goes to the slot it names, else the asked one."""
     words = " ".join(SYNONYMS.get(word, word) for word in utterance.split())
     found = {}
     for slot in PREFERENCES:
@@ -164,6 +163,7 @@ def generate_response(templates: dict[str, str], name: str, transparent: bool = 
     return templates[name].format(**slots)
 
 
+# TODO Move this to a unit test.
 def smalltest():
     load_slot_csv(Path("data/restaurant_info.csv"))
     sentence = "I want a fancy restaurant serving europesan food"

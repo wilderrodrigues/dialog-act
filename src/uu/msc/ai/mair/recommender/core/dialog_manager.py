@@ -5,6 +5,7 @@ from typing import Protocol
 import json
 from datetime import datetime   
 import pandas as pd
+import logging
 
 from uu.msc.ai.mair.recommender.core.functions import (find_restaurants, generate_response, keyword_matching,
                                                       load_restaurants, load_templates)
@@ -12,7 +13,6 @@ from uu.msc.ai.mair.recommender.core.reasoning import Candidate, apply_requireme
 
 
 class State(IntEnum):
-    """The numbered system states of the state transition diagram."""
     WELCOME = 1
     ASK_AREA = 2
     ASK_FOOD = 3
@@ -27,21 +27,19 @@ class ActClassifier(Protocol):
     def predict_one(self, utterance: str) -> str: ...
 
 
-# The order of the decision diamonds in the diagram.
 SLOT_ORDER = ("area", "food", "pricerange")
 ASK_STATE = {"area": State.ASK_AREA, "food": State.ASK_FOOD, "pricerange": State.ASK_PRICE}
 SLOT_OF_STATE = {state: slot for slot, state in ASK_STATE.items()}
 ASK_TEMPLATE = {"area": "askarea", "food": "askfoodtype", "pricerange": "askpricerange"}
 INFO_TEMPLATES = {"givephone": ("phone", "number"), "giveaddress": ("address", "where"),
                   "givepostcode": ("post code", "postcode")}
-# Fallbacks for acts the rule-based classifier tends to miss ("anything else" hits the 'any' inform rule first).
+
 ALTERNATIVE_WORDS = ("else", "another", "other", "alternative")
 BYE_WORDS = ("bye", "goodbye")
 
 
 @dataclass
 class DialogContext:
-    """What the system knows so far: the user's preferences and the restaurants that match them."""
     preferences: dict[str, str | None] = field(default_factory=lambda: dict.fromkeys(SLOT_ORDER))
     # The additional requirements of the reasoning step, e.g. {"romantic": True}; None until they have been asked.
     requirements: dict[str, bool] | None = None
@@ -53,10 +51,6 @@ class DialogContext:
 class DialogManager:
     def __init__(self, classifier: ActClassifier, restaurants_path: Path, templates_path: Path,
                  transparent: bool = True) -> None:
-        """restaurants_path must point to restaurant_info_extended.csv: the reasoning rules need its extra columns.
-
-        transparent switches the reasoning transparency on or off: show the inference chain behind a recommendation.
-        """
         self.classifier = classifier
         self.restaurants = load_restaurants(restaurants_path)
         self.templates = load_templates(templates_path)
@@ -67,7 +61,6 @@ class DialogManager:
 
     def transition(self, state: State, act: str, utterance: str,
                    context: DialogContext) -> tuple[State, str]:
-        """The core of the dialog manager: (state, classified user utterance) -> (next state, system utterance)."""
         words = utterance.split()
         if act in ("bye", "thankyou") or any(word in BYE_WORDS for word in words):
             return State.TERMINATE, self.respond("bye")
@@ -180,7 +173,7 @@ class DialogManager:
     def run(self, log_dir: Path, show_acts: bool = False) -> None:
         state, context = State.WELCOME, DialogContext()
         context.last_utterance = self.respond("welcome")
-        print(f"system: {context.last_utterance}")
+        logging.info(f"system: {context.last_utterance}")
         turns = [{"system": context.last_utterance}]
         while state != State.TERMINATE:
             try:
@@ -189,8 +182,8 @@ class DialogManager:
                 break
             state, system_utterance, act = self.step(state, utterance, context)
             if show_acts:
-                print(f"        [act={act}, state={state.value}. {state.name}, preferences={context.preferences}]")
-            print(f"system: {system_utterance}")
+                logging.info(f"        [act={act}, state={state.value}. {state.name}, preferences={context.preferences}]")
+            logging.info(f"system: {system_utterance}")
 
             turns.append({"user": utterance, "act": act, "state": state.name, "preferences": dict(context.preferences), "system": system_utterance})
         log_dir.mkdir(parents=True, exist_ok=True)
