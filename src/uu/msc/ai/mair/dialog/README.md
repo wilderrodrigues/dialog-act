@@ -5,90 +5,144 @@ project from the ParlAI repository.
 
 ## Usage
 
+the `dialog-acts` CLI (Command Line Interface) offers commands to train and evaluate diverse model types. Before
+you try to train a model, you can pass the `--help` option to check all possible commands.
+
 ```sh
 poetry run dialog-acts --help
 ```
 
-# Baseline Model
+## Training models
+
+### Rule based model
+
+To inspect the options available, please run the command below: 
 
 ```sh
-poetry run dialog-acts eval-rule ./data/dialog_acts.dat
-poetry run dialog-acts eval-rule ./data/dialog_acts.dat --split-strategy vanilla
-poetry run dialog-acts eval-rule ./data/dialog_acts.dat --split-strategy grouped
+poetry run dialog-acts rule-based --help
 ```
 
-# Logistic Regression
-
-We are still working on the refactoring of the Logistic Regression model. However, the current implementation
-under [Logistic Regression](./src/uu/msc/ai/mair/dialog/model/log_reg_classifier.py) is functional, with accuracy of
-80.60%.
-
-# Training the Neural Network model
-
-The simplest way to train the model is to run:
+You can run the rule-based command with either a `vanilla` split strategy, which means we will take 85/15 ratio form the dataset
+and use the 15% to evaluate the model, or you can use the `grouped` strategy, which will use a stratified grouped strategy taking
+into account K fold splits, where K is equals to 7 (1 / 15 ~ 6.67).
 
 ```sh
-poetry run dialog-acts train-nn ./data/dialog_acts.dat
+poetry run dialog-acts rule-based ./data/dialog_acts.dat --split-strategy vanilla
+poetry run dialog-acts rule-ruled ./data/dialog_acts.dat --split-strategy grouped
 ```
 
-Other parameters can be passed to the script. For example, one can decide to use a grouped split instead of a random one.
-In addition to that, one can also specify the type of encoder to be used.
+#### Testing the Rele Based
 
-To see all options, please run:
+The rule based can be tested with a held-out test set using the following command:
+
+```sh
+poetry run dialog-acts rule-based ./data/dialog_acts.dat --mode test
+```
+
+### Logistic Regression
+
+The Logistic Regression model has 4 flavours:
+
+* Vanilla splits (85/15 ratio) with Bag-of-Words strategy;
+* Stratified grouped splits with Bag-of-Words strategy;
+* Vanilla splits with BERT embeddings strategy; and
+* Stratified grouped splits with BERT embeddings strategy.
+
+To inspect the options available, please run the command below: 
+
+```sh
+poetry run dialog-acts train-logreg --help
+```
+
+One can train a Logistic Regression model by running one of the commands below:
+
+```sh
+poetry run dialog-acts train-logreg ./data/dialog_acts.dat --encoder simple --split-strategy vanilla
+poetry run dialog-acts train-logreg ./data/dialog_acts.dat --encoder simple --split-strategy grouped
+poetry run dialog-acts train-logreg ./data/dialog_acts.dat --encoder bert --split-strategy vanilla
+poetry run dialog-acts train-logreg ./data/dialog_acts.dat --encoder bert --split-strategy grouped
+```
+
+### Neural Network model
+
+The Neural Networks available have more flavours than the Logistic Regression model. In total, we can train 6
+different models using a variety of architectures and strategies. The available architectures are the following:
+
+* Embedding Bag-of-Words using a linear layers;
+* Vanilla embedding layer, followed by 1 dimension convolution layers and a linear output layer;
+* Frozen Distil BERT encoder used to bootstrap the Conv1D network; and
+* A full distil BERT encoder, unfrozen, used along side the Conv1D network.
+
+In terms of training strategy, we use the same methods as with the Logistic Regression, plus 2 new ones based on the
+unfrozen model:
+
+* Vanilla splits (85/15 ratio) with Bag-of-Words strategy;
+* Stratified grouped splits with Bag-of-Words strategy;
+* Vanilla splits with BERT embeddings strategy;
+* Stratified grouped splits BERT embeddings strategy;
+* Vanilla splits with unfrozen BERT model strategy;
+* Stratified grouped splits with unfrozen BERT model strategy.
+
+To inspect the options available, please run the command below: 
 
 ```sh
 poetry run dialog-acts train-nn --help
 ```
 
-Currently, the Neural Network can be trained with the following flavours:
+One can train a Neural Network model by running one of the commands below:
 
 ```sh
-poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder simple --epochs 5 --split-strategy vanilla
-poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder simple --epochs 5 --split-strategy grouped
-poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder bert --epochs 5 --split-strategy vanilla
-poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder bert --epochs 5 --split-strategy grouped
-poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder finetune --epochs 5 --split-strategy vanilla
-poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder finetune --epochs 5 --split-strategy grouped
+poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder simple --epochs 10 --split-strategy vanilla
+poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder simple --epochs 10 --split-strategy grouped
+poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder bert --epochs 10 --split-strategy vanilla
+poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder bert --epochs 10 --split-strategy grouped
+poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder finetune --epochs 10 --split-strategy vanilla
+poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder finetune --epochs 10 --split-strategy grouped
 ```
+
+The unfrozen BERT models has 66 million parameters. So, training it needs more time. On a MacBook Pro M4 using the
+MPS device, it took 2 minutes per epoch.
 
 The number of epochs given above is just for the sake of demonstration. The default value is set to 20. 
 
 ## Model checkpoints
 
-The best model is saved under `ouput/best_model_epoch_N_YYYYMMD.pth`.
+We also pushed a Model Zoo containing 4 Logistic Regression and 4 Neural Network models. We have not pushed the unfrozen 
+BERT models because those were too big: 250MB. The Model Zoo artefacts can be found under the directory `model-zoo`.
 
-## Evaluating a trained Neural Network model
+If you train you own models, for more epochs for example, the resulting artefacts will be saved under `output_log_reg` and `output_nn`
+for the Logistic Regression and Neural Networks, respectively.
 
-To evaluate a model, you will need a test dataset, which is a held-out split not present during training, and a
-trained model. Please make sure to use either a `simple` or a `bert` encoder based model.
+## Evaluating models
 
-The commands below will evaluate the model on the test dataset:
+Both Logistic Regression and Neural Network models have an evaluation command. Below we show two simple ways to validate
+either model. It's important to note that although we are using the training dataset in the examples below, you should use
+a held-out test set with those commands.
 
+* Logistic Regression
 ```sh
-poetry run dialog-acts eval-nn my-test-split.dat my-simple-encoder-model.pth --encoder simple
-poetry run dialog-acts eval-nn my-test-split.dat my-bert-encoder-model.pth --encoder bert
+poetry run dialog-acts eval-logreg \
+                       ./data/dialog_acts.dat \
+                       ./model-zoo/Logistic\ regression/log_reg_simple_vanilla.pkl \
+                       --encoder simple
 ```
 
-The metrics will be printed out on the console, and the confusion matrix will be saved under `ouput/nn_confusion_matrix.png`.
-
-# Frozen pretrained embeddings
-
-[FrozenDistilBertEncoder](./src/uu/msc/ai/mair/dialog/core/encoders.py) turns utterances into features with a
-frozen DistilBERT model. The pretrained weights are never updated: the model runs in evaluation mode inside
-`torch.no_grad`, so it is a fixed feature extractor rather than something we train. It offers one shape per kind of
-classifier, so every classifier can be trained on the same representation:
-| method | shape | consumer |
-|---|---|---|
-| `encode_sentence` | `(n, MAX_TOKENS, 768)` | models that consume a sequence, such as the convolutional net |
-| `encode_sentences` | `(n, 768)`, the `[CLS]` vector | models that need one fixed-size vector, such as logistic regression |
-
-
-# Fine-tuned DistilBERT
-
-With `--encoder finetune` the DistilBERT weights are trained end to end together with the classifier, instead of
-being kept frozen:
-
+* Neural Network 
 ```sh
-poetry run dialog-acts train-nn ./data/dialog_acts.dat --encoder finetune --epochs 20
+poetry run dialog-acts eval-nn \
+                       ./data/dialog_acts.dat \
+                       ./model-zoo/Neural\ networks/nn-bow-vanilla.pth \
+                       --encoder simple
 ```
 
+The metrics will be printed out on the console, and the confusion matrix will be saved under the already indicated
+output directories: `output_log_reg` and `output_nn`, for the Logistic Regression and Neural Netroks, respectively.
+
+## Authors
+
+The authors are depicted in alphabetical order and have equal contribution to the project.
+
+* Cai Jiacheng
+* Dexter Fijn van Draat
+* Remy Jager
+* Wilder C. Rodrigues
