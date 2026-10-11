@@ -26,13 +26,13 @@ SYNONYMS = {"center": "centre", "moderately": "moderate", "cheaper": "cheap", "p
             "affordable": "cheap", "inexpensive": "cheap", "budget": "cheap"}
 
 
-def keyword_matching(utterance: str, document: pd.DataFrame, asked_slot: str | None = None) -> dict[str, Sized]:
+def keyword_matching(utterance: str, document: dict[str, set], asked_slot: str | None = None) -> dict[str, Sized]:
     """Finds the preferences named in the utterance; 'any'/'dont care' goes to the slot it names, else the asked one."""
     words = " ".join(SYNONYMS.get(word, word) for word in utterance.split())
     found = {}
     for slot in PREFERENCES:
         # Longest values first, so 'modern european' wins over 'european'.
-        values = sorted((value for value in document[slot].unique() if value != UNKNOWN), key=len, reverse=True)
+        values = sorted((value for value in document[slot] if value != UNKNOWN), key=len, reverse=True)
         match = next((value for value in values if re.search(rf"\b{re.escape(value)}\b", words)), None)
         if match is not None:
             found[slot] = match

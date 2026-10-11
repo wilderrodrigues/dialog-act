@@ -10,10 +10,11 @@ from uu.msc.ai.mair.dialog.core.encoders import FrozenDistilBertEncoder
 
 class LogRegModel:
 
-    def __init__(self, dataset_path: Path, num_iterations: int = 1000, encoder: str = "bow") -> None:
+    def __init__(self, dataset_path: Path, separator: str = " ", num_iterations: int = 1000, encoder: str = "bow") -> None:
         self.dataset_path = dataset_path
+        self.separator = separator
         self.encoder = encoder
-        if (encoder == "bert"):
+        if encoder.lower() == "bert":
             self.vectorizer = FrozenDistilBertEncoder()
             self.vectorizer.init_tokenizer(None)
         else:
@@ -36,7 +37,7 @@ class LogRegModel:
 
         load_and_split = (DatasetFactory.load_and_split_vanilla if split_strategy == "vanilla" else DatasetFactory.load_and_split_grouped)
         utterances_train, utterances_val, acts_train, acts_val, targets = load_and_split(
-        data_path=self.dataset_path, separator=" ", split=split, seed=seed)
+        data_path=self.dataset_path, separator=self.separator, split=split, seed=seed)
 
         self.targets = targets
         vectorized_train = self._vectorize(utterances_train, fit = True) 
