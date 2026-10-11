@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from enum import IntEnum
 from pathlib import Path
-from typing import Protocol
 import json
 from datetime import datetime   
 import pandas as pd
@@ -9,6 +8,7 @@ import logging
 
 from uu.msc.ai.mair.recommender.core.functions import (find_restaurants, generate_response, keyword_matching,
                                                       load_restaurants, load_templates)
+from uu.msc.ai.mair.recommender.core.inference_engine import Predictor
 from uu.msc.ai.mair.recommender.core.reasoning import Candidate, apply_requirements, choose, extract_requirements
 
 
@@ -21,10 +21,6 @@ class State(IntEnum):
     SUGGEST = 6
     GIVE_INFO = 7
     TERMINATE = 8
-
-
-class ActClassifier(Protocol):
-    def predict_one(self, utterance: str) -> str: ...
 
 
 SLOT_ORDER = ("area", "food", "pricerange")
@@ -48,7 +44,7 @@ class DialogContext:
 
 
 class DialogManager:
-    def __init__(self, classifier: ActClassifier, restaurants_path: Path, templates_path: Path,
+    def __init__(self, classifier: Predictor, restaurants_path: Path, templates_path: Path,
                  transparent: bool = True) -> None:
         self.classifier = classifier
         self.restaurants = load_restaurants(restaurants_path)

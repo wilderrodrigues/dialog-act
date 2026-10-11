@@ -30,6 +30,8 @@ import logging
 
 import typer
 
+from uu.msc.ai.mair.recommender.core.inference_engine import LogRegPredictor
+
 app = typer.Typer(no_args_is_help=True, help="Dialog: Methods in AI Research.")
 logging.basicConfig(level=logging.INFO)
 
@@ -127,6 +129,9 @@ def evaluate_nn(
     separator: Annotated[str, typer.Option(help="DAT file separator.")] = " ",
     encoder: Annotated[str, typer.Option(help="Encoder to use when tokenizing the data. Must be 'simple', 'bert' or 'finetune'")] = "simple",) -> None:
 
+    if encoder.lower() not in ("simple", "bert", "finetune"):
+        raise typer.BadParameter(f"Invalid encoder: {encoder}. Must be one of 'simple', 'bert' or 'finetune'.")
+
     seed_everything(seed=seed)
 
     dialog_model = torch.load(model_path, weights_only=False, map_location=select_device(device))
@@ -153,7 +158,7 @@ def prompt_nn(
     device: Annotated[DeviceChoice, typer.Option(help="PyTorch compute device.")] = DeviceChoice.AUTO,
     encoder: Annotated[str, typer.Option(help="Must match training: 'simple', 'bert' or 'finetune'")] = "simple",
 ) -> None:
-    if encoder not in ("simple", "bert", "finetune"):
+    if encoder.lower() not in ("simple", "bert", "finetune"):
         raise typer.BadParameter(f"Invalid encoder: {encoder}. Must be one of 'simple', 'bert' or 'finetune'.")
 
     selected_device = select_device(device)
@@ -161,8 +166,8 @@ def prompt_nn(
     model.eval()
     *_, targets = DatasetFactory.load_and_split_vanilla(data_path=dataset_path)
     acts = {idx: act for act, idx in targets.items()}
-    encoder = nn_config[encoder]()
-    encoder.init_tokenizer(DatasetFactory.load_dataframe(dataset_path, separator=" "))
+    feature_encoder = nn_config[encoder.lower()]()
+    feature_encoder.init_tokenizer(DatasetFactory.load_dataframe(dataset_path, separator=" "))
 
     logging.info("Type an utterance to classify it, or 'exit' to quit.")
     while True:
@@ -176,7 +181,7 @@ def prompt_nn(
             continue
 
         with torch.no_grad():
-            index = model(encode_one(encoder, utterance, targets).to(selected_device)).argmax(dim=1).item()
+            index = model(encode_one(feature_encoder, utterance, targets).to(selected_device)).argmax(dim=1).item()
         logging.info(acts[index])
 
 
@@ -190,24 +195,20 @@ def train_log_reg(
     split_strategy: Annotated[str, typer.Option(help="Must be 'vanilla' or 'grouped'")] = "vanilla",
     encoder: Annotated[str, typer.Option(help="Must be 'simple' - for bag-of-words - or 'bert' (frozen DistilBERT)")] = "simple",
 ) -> None:
-    if split_strategy not in ("vanilla", "grouped"):
+    if split_strategy.lower() not in ("vanilla", "grouped"):
         raise typer.BadParameter(f"Invalid split strategy: {split_strategy}. Must be one of 'vanilla' or 'grouped'.")
-    if encoder not in ("simple", "bert"):
+    if encoder.lower() not in ("simple", "bert"):
         raise ValueError(f"Invalid encoder: {encoder}. Must be 'simple' or 'bert'.")
 
     seed_everything(seed=seed)
 
-    logreg = LogRegModel(dataset_path=dataset_path, separator=separator, num_iterations=num_iterations, encoder=encoder)
-    acts_val, acts_pred = logreg.train(split=val_split, seed=seed, split_strategy=split_strategy)
-
-
-    if split_strategy not in ("vanilla", "grouped"):
-        raise ValueError(f"Invalid split strategy: {split_strategy}. Must be 'vanilla' or 'grouped'.")
+    logreg = LogRegModel(dataset_path=dataset_path, separator=separator, num_iterations=num_iterations, encoder=encoder.lower())
+    acts_val, acts_pred = logreg.train(split=val_split, seed=seed, split_strategy=split_strategy.lower())
 
     output_dir = get_root() / "output_log_reg"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    name = f"log_reg_{encoder}_{split_strategy}"
+    name = f"log_reg_{encoder.lower()}_{split_strategy}"
     with open(output_dir / f"{name}.pkl", "wb") as f:
         pickle.dump(logreg, f)
 
@@ -234,7 +235,7 @@ def evaluate_logreg(
     seed: Annotated[int, typer.Option(min=0, help="Random seed for the training.")] = DatasetFactory.SEED,
     encoder: Annotated[str, typer.Option(help="Must match training: 'simple' for bow or 'finetune'")] = "simple",
 ) -> None:
-    if encoder not in ("simple", "bert"):
+    if encoder.lower() not in ("simple", "bert"):
         raise ValueError(f"Invalid encoder: {encoder}. Must be 'simple' or 'bert'.")
 
     seed_everything(seed=seed)
@@ -245,9 +246,9 @@ def evaluate_logreg(
     mode="Test"
     utterances_test, acts_test, targets = DatasetFactory.load_test_dataset(data_path=dataset_path)
 
-    if encoder == "simple":
+    if encoder.lower() == "simple":
         vectorized_test_utterances = utterances_test
-    elif encoder == "bert":
+    elif encoder.lower() == "bert":
         frozen = nn_config["bert"]()
         frozen.init_tokenizer(None)
         vectorized_test_utterances = frozen.encode_sentences(list(utterances_test))
@@ -311,12 +312,24 @@ def rule_based(
 @app.command(name="chat", help="Talk to the restaurant recommender, using the rule-based dialog act classifier.")
 def chat(
     restaurants_path: Annotated[Path, typer.Option(help="Path to restaurant_info_extended.csv.")] = get_root() / "data" / "restaurant_info_extended.csv",
+    model_type: Annotated[str, typer.Option(help="Model to be loaded and used by the dialog manager. Values should be 'logreg' or 'ann")] = "logreg",
     templates_path: Annotated[Path, typer.Option(help="Path to the response templates.")] = get_root() / "data" / "templates.json",
     seed: Annotated[int | None, typer.Option(help="Random seed for picking among matching restaurants.")] = DatasetFactory.SEED,
     show_acts: Annotated[bool, typer.Option(help="Print the classified act and dialog state after every turn.")] = False,
     log_dir: Annotated[Path, typer.Option(help="Directory for the JSON interaction logs.")] = get_root() / "output" / "dialogs",
     transparent: Annotated[bool, typer.Option(help="Explain the reasoning behind a recommendation.")] = True,
 ) -> None:
+    if model_type.lower() not in ("logreg", "ann"):
+        raise ValueError(f"Invalid model: {model_type}. Must be 'logreg' or 'ann'.")
+
+    dialog_predictor = None
+    if model_type.lower() == "logreg":
+        model_path = get_root() / "model-zoo" / "Logistic regression" / "log_reg_simple_grouped.pkl"
+        dialog_predictor = LogRegPredictor(model_path)
+        logging.info(f"Modeal type '{model_type}' loaded.")
+    elif model_type.lower() == "ann":
+        raise NotImplementedError("The Neural Network classifier is not yet implemented in the recommender yet.")
+
     seed_everything(seed=seed)
-    DialogManager(classifier=RuleBasedModel(), restaurants_path=restaurants_path,
+    DialogManager(classifier=dialog_predictor, restaurants_path=restaurants_path,
                   templates_path=templates_path, transparent=transparent).run(log_dir=log_dir, show_acts=show_acts)
