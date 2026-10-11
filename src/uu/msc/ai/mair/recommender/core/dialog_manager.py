@@ -2,7 +2,8 @@ from dataclasses import dataclass, field
 from enum import IntEnum
 from pathlib import Path
 from typing import Protocol
-
+import json
+from datetime import datetime   
 import pandas as pd
 
 from uu.msc.ai.mair.recommender.core.functions import (find_restaurants, generate_response, keyword_matching,
@@ -127,10 +128,11 @@ class DialogManager:
         context.last_utterance = system_utterance
         return next_state, system_utterance, act
 
-    def run(self, show_acts: bool = False) -> None:
+    def run(self, log_dir: Path, show_acts: bool = False) -> None:
         state, context = State.WELCOME, DialogContext()
         context.last_utterance = self.respond("welcome")
         print(f"system: {context.last_utterance}")
+        turns = [{"system": context.last_utterance}]
         while state != State.TERMINATE:
             try:
                 utterance = input("user: ")
@@ -140,3 +142,8 @@ class DialogManager:
             if show_acts:
                 print(f"        [act={act}, state={state.value}. {state.name}, preferences={context.preferences}]")
             print(f"system: {system_utterance}")
+
+            turns.append({"user": utterance, "act": act, "state": state.name, "preferences": dict(context.preferences), "system": system_utterance})
+        log_dir.mkdir(parents=True, exist_ok=True)
+        with (log_dir / f"dialog_{datetime.now():%Y%m%d_%H%M%S}.json").open("w", encoding="utf-8") as file:
+            json.dump(turns, file, indent=2)
