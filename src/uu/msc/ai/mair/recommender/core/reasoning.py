@@ -17,6 +17,12 @@ class Rule:
     reason: str  # The template that explains the rule to the user.
 
 
+@dataclass
+class Candidate:
+    restaurant: pd.Series
+    reasons: list[str]  # Reason templates for the requested properties, used by the transparent recommendation.
+
+
 RULES = (
     Rule(1, lambda r: r["pricerange"] == "cheap" and r["food quality"] == "good", "touristic", True,
          "reasoncheapgoodfoodtouristic"),
@@ -37,11 +43,6 @@ CLAUSE_BREAK = r"[,.;!?]|\band\b|\bbut\b"
 
 
 def reasoning_function(restaurant: pd.Series) -> tuple[dict[str, bool | None], dict[str, list[str]]]:
-    """Applies every rule that fires. Returns the derived value per property and the reason templates behind it.
-
-    A property for which rules derive both True and False is a contradiction: its value stays None (unknown) and
-    its reasons hold both sides, so the dialog manager can explain why the restaurant was not chosen.
-    """
     conclusions: dict[str, set[bool]] = {name: set() for name in PROPERTIES}
     reasons: dict[str, list[str]] = {name: [] for name in PROPERTIES}
     for rule in RULES:
@@ -58,7 +59,6 @@ def is_contradiction(inferred: dict[str, bool | None], reasons: dict[str, list[s
 
 
 def extract_requirements(utterance: str) -> dict[str, bool]:
-    """Keyword matching for the additional requirements, e.g. 'romantic, no kids' -> romantic=True, children=False."""
     utterance = utterance.replace("'", "")
     found = {}
     for name, pattern in REQUIREMENT_PATTERNS.items():
@@ -70,19 +70,8 @@ def extract_requirements(utterance: str) -> dict[str, bool]:
     return found
 
 
-@dataclass
-class Candidate:
-    restaurant: pd.Series
-    reasons: list[str]  # Reason templates for the requested properties, used by the transparent recommendation.
-
-
 def apply_requirements(restaurants: list[pd.Series], requirements: dict[str, bool]
                        ) -> tuple[list[Candidate], list[tuple[pd.Series, str, list[str]]]]:
-    """Keeps the restaurants whose derived properties match every requirement.
-
-    Also returns the restaurants that were dropped because of a contradiction on a requested property, as
-    (restaurant, property, conflicting reason templates).
-    """
     candidates, conflicts = [], []
     for restaurant in restaurants:
         inferred, reasons = reasoning_function(restaurant)
@@ -96,7 +85,6 @@ def apply_requirements(restaurants: list[pd.Series], requirements: dict[str, boo
 
 
 def choose(candidates: list[Candidate]) -> tuple[Candidate | None, list[Candidate]]:
-    """Picks one candidate at random and keeps the others, in order, as alternatives."""
     if not candidates:
         return None, []
     rest = list(candidates)
