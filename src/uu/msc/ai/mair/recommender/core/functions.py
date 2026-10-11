@@ -1,27 +1,50 @@
 import json
 import random
-from pathlib import Path
-import Levenshtein
 import re
+from pathlib import Path
+from typing import Sized
+
+import Levenshtein
 import pandas as pd
 import numpy as np
-import numpy.typing as npt
 from sklearn.metrics.pairwise import cosine_similarity
-from uu.msc.ai.mair.dialog.core.encoders import (EMBED_LEN, Encoder, SimpleEncoder, FrozenDistilBertEncoder,
-                                                 DistilBertTokenEncoder)
+from uu.msc.ai.mair.dialog.core.encoders import (FrozenDistilBertEncoder)
 
 PREFERENCES = ("pricerange", "area", "food")
 STOPWORDS = {"i", "want", "wanna", "looking", "restaurant", "place", "please", "food", "part", "town",
              "that", "serves", "serving", "with", "have", "find", "would", "like", "need", "something",
-             "somewhere", "what", "about", "there", "also", "thanks", "hello","a"}
+             "somewhere", "what", "about", "there", "also", "thanks", "hello", "a"}
 
 DONT_CARE = "dontcare"
 UNKNOWN = "unknown"
 
 VALUE_VECTORS = {}
+DONT_CARE_PATTERNS = ("any", "dont care", "doesnt matter", "does not matter", "whatever")
+DONT_CARE_HINTS = {"pricerange": ("price",), "area": ("area", "part", "town"), "food": ("food", "type", "kind")}
+SYNONYMS = {"center": "centre", "moderately": "moderate", "cheaper": "cheap", "pricey": "expensive",
+            "fancy": "expensive", "upscale": "expensive", "luxurious": "expensive",
+            "affordable": "cheap", "inexpensive": "cheap", "budget": "cheap"}
 
 
-def load_slot_csv(csv_path: Path):
+def keyword_matching(utterance: str, document: pd.DataFrame, asked_slot: str | None = None) -> dict[str, Sized]:
+    """Finds the preferences named in the utterance; 'any'/'dont care' goes to the slot it names, else the asked one."""
+    words = " ".join(SYNONYMS.get(word, word) for word in utterance.split())
+    found = {}
+    for slot in PREFERENCES:
+        # Longest values first, so 'modern european' wins over 'european'.
+        values = sorted((value for value in document[slot].unique() if value != UNKNOWN), key=len, reverse=True)
+        match = next((value for value in values if re.search(rf"\b{re.escape(value)}\b", words)), None)
+        if match is not None:
+            found[slot] = match
+
+    if any(re.search(rf"\b{pattern}\b", words) for pattern in DONT_CARE_PATTERNS):
+        hinted = [slot for slot, hints in DONT_CARE_HINTS.items() if any(hint in words for hint in hints)]
+        for slot in hinted or ([asked_slot] if asked_slot else []):
+            found.setdefault(slot, DONT_CARE)
+    return found
+
+
+def load_slot_csv(csv_path: Path) -> dict[str, set]:
     data = pd.read_csv(csv_path)
     slotdict = {}
     for item in PREFERENCES:
@@ -29,38 +52,13 @@ def load_slot_csv(csv_path: Path):
         slotdict[item] = set(columnitems)
     return slotdict
 
+
 def parse_sentence(sentence: str) -> list[str]:
     words = re.findall(r"[a-z']+", sentence.lower())
     return [word for word in words if word not in STOPWORDS]
 
 
-
-def keyword_matching(sentence: str, document: dict) -> list[str]:
-
-    parsesentence = parse_sentence(sentence)
-    max_words = max(len(value.split(" ")) for slots in PREFERENCES for value in document[slots])
-    matches = {}
-
-    for n in range(max_words, 0, -1):
-        for slots in PREFERENCES:
-            if slots in matches:
-                continue
-            for value in document[slots]:
-                valuewords = value.split(" ")
-                if len(valuewords) != n:
-                    continue
-                for i in range(len(parsesentence) - n + 1):
-                    if parsesentence[i:i + n] == valuewords:
-                        matches[slots] = value
-                        parsesentence[i:i + n] = ["#"] * n
-                        break
-    return matches
-
-
-
-
 def levenshtein_distance(sentence: str, document: dict, matched: dict, max_distance: int = 2) -> dict:
-
     parsesentence = parse_sentence(sentence)
 
     for i in range(len(parsesentence)):
@@ -94,12 +92,8 @@ def levenshtein_distance(sentence: str, document: dict, matched: dict, max_dista
     return matches
 
 
-
-
-
-#TODO it is really bad the encoding always guesses wrong something wrong with bert?
-def semantic_similarity(sentence: str, document: dict, matched: dict, encoder, threshold: float = 0.75) -> dict:
-
+# TODO it is really bad the encoding always guesses wrong something wrong with bert?
+def semantic_similarity(sentence: str, document: dict, matched: dict, encoder, threshold: float = 0.8) -> dict:
     parsesentence = parse_sentence(sentence)
 
     for i in range(len(parsesentence)):
@@ -111,7 +105,9 @@ def semantic_similarity(sentence: str, document: dict, matched: dict, encoder, t
     if not words:
         return {}
 
-    word_vectors = encoder.encode_sentences(words)
+    token_vectors = encoder.encode_sentence(words)
+    lengths = (np.abs(token_vectors).sum(-1) > 0).sum(1)
+    word_vectors = np.stack([vectors[1: n - 1].mean(0) for vectors, n in zip(token_vectors, lengths)])
 
     matches = {}
     for slots in PREFERENCES:
@@ -120,7 +116,10 @@ def semantic_similarity(sentence: str, document: dict, matched: dict, encoder, t
 
         if slots not in VALUE_VECTORS:
             values = sorted(document[slots])
-            VALUE_VECTORS[slots] = (values, encoder.encode_sentences(values))
+            token_vectors = encoder.encode_sentence(values)
+            lengths = (np.abs(token_vectors).sum(-1) > 0).sum(1)
+            VALUE_VECTORS[slots] = (
+                values, np.stack([vectors[1: n - 1].mean(0) for vectors, n in zip(token_vectors, lengths)]))
 
         values, value_vectors = VALUE_VECTORS[slots]
 
@@ -165,7 +164,6 @@ def generate_response(templates: dict[str, str], name: str, transparent: bool = 
     return templates[name].format(**slots)
 
 
-# TODO: Move this to a unit test
 def smalltest():
     load_slot_csv(Path("data/restaurant_info.csv"))
     sentence = "I want a fancy restaurant serving europesan food"
