@@ -82,7 +82,7 @@ def calculate_loss_accuracy(model: torch.nn.Module, loss_fn: torch.nn.Module,
 
 def train_loop(model: torch.nn.Module, loss_fn: torch.nn.Module, optimizer: torch.optim.Optimizer,
                train_loader: DataLoader, val_loader: DataLoader, epochs: int, device: torch.device,
-               output_dir: Path) -> tuple[float, npt.NDArray]:
+               output_dir: Path, model_name: str) -> tuple[float, npt.NDArray]:
     model.to(device)
     best_accuracy = 0.0
     conf_matrix = None
@@ -106,8 +106,8 @@ def train_loop(model: torch.nn.Module, loss_fn: torch.nn.Module, optimizer: torc
         epoch_balanced_accuracy, conf_matrix = calculate_loss_accuracy(model, loss_fn, val_loader, device, "Validation")
         if epoch_balanced_accuracy > best_accuracy:
             best_accuracy = epoch_balanced_accuracy
-            model_name = f"best_model_epoch_{str(epochs)}_{time.strftime('%Y%m%d')}.pth"
-            torch.save(model, output_dir / model_name)
-            logging.info(f"Best Balanced Accuracy : {best_accuracy:.3f} saved as {model_name}.")
+            best_model_name = f"{model_name}_best_epoch_{str(epochs)}_{time.strftime('%Y%m%d')}.pth"
+            torch.save(model, output_dir / best_model_name)
+            logging.info(f"Best Balanced Accuracy : {best_accuracy:.3f} saved as {best_model_name}.")
 
     return best_accuracy, conf_matrix

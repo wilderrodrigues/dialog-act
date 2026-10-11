@@ -102,11 +102,12 @@ def train_nn(
     n_parameters = sum(parameter.numel() for parameter in conv_classifier.parameters())
     logging.info(f"Trainable parameters : {n_parameters:,}")
 
-    output_dir = get_root() / "output"
+    output_dir = get_root() / "output_nn"
+    model_name = f"nn_{encoder}_{split_strategy}"
     output_dir.mkdir(parents=True, exist_ok=True)
     selected_device = select_device(device)
     balanced_accuracy, confusion_matrix = train_loop(conv_classifier, loss_fn, optimizer, train_loader, val_loader,
-                                                     epochs, selected_device, output_dir)
+                                                     epochs, selected_device, output_dir, model_name)
     logging.info(f"Training time : {time.perf_counter() - start_time:.1f} s")
     plot_confusion_matrix(confusion_matrix, targets, output_dir)
 
@@ -280,29 +281,33 @@ def evaluate_log_reg(
     plt.show()
 
 
-@app.command(name="eval-rule", help="Evaluate the rule-based baseline.")
-def evaluate_rule(
+@app.command(name="rule-based", help="Evaluate the rule-based baseline.")
+def rule_based(
     dataset_path: Annotated[Path, typer.Argument(help="Path to the dataset.")],
-    split_strategy: Annotated[str | None, typer.Option(help="Evaluate on the validation part of a 'vanilla' or 'grouped' split instead of the whole file.")] = None,
+    mode: Annotated[str, typer.Option(help="Evaluate the rule based model. The mode is either 'eval' or 'test'.")] = "eval",
+    split_strategy: Annotated[str, typer.Option(help="Evaluate on the validation part of a 'vanilla' or 'grouped' split instead of the whole file.")] = "vanilla",
     seed: Annotated[int, typer.Option(min=0, help="Random seed for the split.")] = DatasetFactory.SEED,
     val_split: Annotated[float, typer.Option(help="Validation split ration.")] = DatasetFactory.VAL_SPLIT,
     separator: Annotated[str, typer.Option(help="DAT file separator.")] = " ",
 ) -> None:
-    if split_strategy is None:
-        mode = "Test"
+    if mode.lower() == "test":
         utterances, acts, targets = DatasetFactory.load_test_dataset(data_path=dataset_path, separator=separator)
-    elif split_strategy in ("vanilla", "grouped"):
-        mode = "Validation"
-        _, utterances, _, acts, targets = nn_config[split_strategy](data_path=dataset_path, separator=separator,
-                                                                    split=val_split, seed=seed)
-    else:
-        raise typer.BadParameter(f"Invalid split strategy: {split_strategy}. Must be one of 'vanilla' or 'grouped'.")
+    elif mode.lower() == "eval":
+        if split_strategy.lower() in ("vanilla", "grouped"):
+            _, utterances, _, acts, targets = nn_config[split_strategy](data_path=dataset_path, separator=separator,
+                                                                        split=val_split, seed=seed)
+        else:
+            raise typer.BadParameter(f"Invalid split strategy: {split_strategy}. Must be one of 'vanilla' or 'grouped'.")
 
     predictions = RuleBasedModel().predict(utterances)
+    recall = recall_score(acts, predictions, average="micro", labels=np.unique(predictions))
+    precision = precision_score(acts, predictions, average="micro", labels=np.unique(predictions))
     logging.info(f"{mode} Accuracy  : {accuracy_score(acts, predictions):.3f}")
     logging.info(f"{mode} Balanced Accuracy  : {balanced_accuracy_score(acts, predictions):.3f}")
+    logging.info(f"{mode} Recall  : {recall:.3f}")
+    logging.info(f"{mode} Precision  : {precision:.3f}")
 
-    output_dir = get_root() / "output"
+    output_dir = get_root() / "output_rube_based"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     labels = list(targets)
