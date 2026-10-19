@@ -22,6 +22,25 @@ class State(IntEnum):
     GIVE_INFO = 7
     TERMINATE = 8
 
+
+class DialogAct(StrEnum):
+    INFORM = "inform"
+    AFFIRM = "affirm"
+    NEGATE = "negate"
+    REQUEST = "request"
+    REQALTS = "reqalts"
+    THANKYOU = "thankyou"
+    NULL = "null"
+    BYE = "bye"
+    REPEAT = "repeat"
+    RESTART = "restart"
+    ACK = "ack"
+    DENY = "deny"
+    CONFIRM = "confirm"
+    HELLO = "hello"
+    REQMORE = "reqmore"
+
+
 class Fallback(StrEnum):
     NONE = "none"
     LEVENSHTEIN = "levenshtein"
@@ -34,10 +53,6 @@ ASK_TEMPLATE = {"area": "askarea", "food": "askfoodtype", "pricerange": "askpric
 INFO_TEMPLATES = {"givephone": ("phone", "number"), "giveaddress": ("address", "where"),
                   "givepostcode": ("post code", "postcode")}
 
-ALTERNATIVE_WORDS = ("else", "another", "other", "alternative")
-BYE_WORDS = ("bye", "goodbye")
-
-
 @dataclass
 class DialogContext:
     preferences: dict[str, str | None] = field(default_factory=lambda: dict.fromkeys(SLOT_ORDER))
@@ -45,6 +60,13 @@ class DialogContext:
     alternatives: list[Candidate] = field(default_factory=list)
     restaurant: pd.Series | None = None
     last_utterance: str = ""
+
+    def reset(self) -> None:
+        self.preferences = dict.fromkeys(SLOT_ORDER)
+        self.requirements = None
+        self.alternatives.clear()
+        self.restaurant = None
+        self.last_utterance = ""
 
 
 class DialogManager:
@@ -60,7 +82,7 @@ class DialogManager:
             self.encoder = FrozenDistilBertEncoder()
             self.encoder.init_tokenizer(None)
 
-    def _extract(self, utterance : str, asked_slot: str| None) ->dict[str, str]:
+    def _extract(self, utterance: str, asked_slot: str | None = None) -> dict[str, str]:
         preferences = keyword_matching(utterance, self.restaurants, asked_slot)
         if self.fallback == Fallback.LEVENSHTEIN:
             closest = levenshtein_distance(utterance, self.restaurants, preferences)
@@ -75,48 +97,126 @@ class DialogManager:
 
     def transition(self, state: State, act: str, utterance: str,
                    context: DialogContext) -> tuple[State, str]:
-        words = utterance.split()
-        if act in ("bye", "thankyou") or any(word in BYE_WORDS for word in words):
+        try:
+            dialog_act = DialogAct(act)
+        except ValueError:
+            return self._recover(state)
+
+        if dialog_act in (DialogAct.BYE, DialogAct.THANKYOU):
             return State.TERMINATE, self.respond("bye")
-        if act == "repeat":
+        if dialog_act == DialogAct.REPEAT:
             return state, context.last_utterance
-        if act == "restart":
-            context.__init__()
+        if dialog_act == DialogAct.RESTART:
+            context.reset()
             return State.WELCOME, self.respond("welcome")
 
-        if state in (State.WELCOME, State.ASK_AREA, State.ASK_FOOD, State.ASK_PRICE):
-            preferences = self._extract(utterance, SLOT_OF_STATE.get(state))
-            requirements = extract_requirements(utterance)
-            if preferences or requirements or state == State.WELCOME:
-                context.preferences.update(preferences)
-                if requirements:
-                    context.requirements = {**(context.requirements or {}), **requirements}
-                return self._next_question(context)
-            return state, self.respond(ASK_TEMPLATE[SLOT_OF_STATE[state]])
-
-        if state == State.ASK_ADDITIONAL:
-            preferences = keyword_matching(utterance, self.restaurants)
-            requirements = extract_requirements(utterance)
-            if act == "affirm" and not (preferences or requirements):
-                return state, self.respond("askadditional")
-            context.preferences.update(preferences)
-            context.requirements = requirements
-            return self._suggest(context)
-
-        if state in (State.SUGGEST, State.GIVE_INFO):
-            preferences = keyword_matching(utterance, self.restaurants)
-            requirements = extract_requirements(utterance)
-            if preferences or requirements:
-                context.preferences.update(preferences)
-                context.requirements = {**(context.requirements or {}), **requirements}
-                return self._suggest(context)
-            if act == "reqalts" or any(word in ALTERNATIVE_WORDS for word in words):
-                return self._alternative(context)
-            if act == "request" or self._requested_info(utterance):
-                return self._give_info(utterance, context)
+        handlers = {
+            State.WELCOME: self._handle_welcome,
+            State.ASK_AREA: self._handle_slot_question,
+            State.ASK_FOOD: self._handle_slot_question,
+            State.ASK_PRICE: self._handle_slot_question,
+            State.ASK_ADDITIONAL: self._handle_additional_requirements,
+            State.SUGGEST: self._handle_recommendation_state,
+            State.GIVE_INFO: self._handle_recommendation_state,
+        }
+        handler = handlers.get(state)
+        if handler is None:
             return state, context.last_utterance
+        return handler(state, dialog_act, utterance, context)
 
-        return state, context.last_utterance
+    def _handle_welcome(self, state: State, act: DialogAct, utterance: str,
+                        context: DialogContext) -> tuple[State, str]:
+        if act == DialogAct.NULL:
+            return State.ASK_AREA, self.respond(ASK_TEMPLATE["area"])
+        if act != DialogAct.INFORM:
+            return self._recover(state)
+        self._store_early_information(utterance, context)
+        return self._next_question(context)
+
+    def _handle_slot_question(self, state: State, act: DialogAct, utterance: str,
+                              context: DialogContext) -> tuple[State, str]:
+        if act in (DialogAct.AFFIRM, DialogAct.NULL):
+            return state, self.respond(ASK_TEMPLATE[SLOT_OF_STATE[state]])
+        if act != DialogAct.INFORM:
+            return self._recover(state)
+
+        preferences, requirements = self._extract_information(utterance, SLOT_OF_STATE[state])
+        if not preferences and not requirements:
+            return self._recover(state)
+        context.preferences.update(preferences)
+        if requirements:
+            context.requirements = {**(context.requirements or {}), **requirements}
+        return self._next_question(context)
+
+    def _handle_additional_requirements(self, state: State, act: DialogAct, utterance: str,
+                                        context: DialogContext) -> tuple[State, str]:
+        if act == DialogAct.NEGATE:
+            context.requirements = {}
+            return self._suggest(context)
+        if act != DialogAct.INFORM:
+            return self._recover(state)
+
+        preferences, requirements = self._extract_information(utterance)
+        if requirements:
+            context.requirements = {**(context.requirements or {}), **requirements}
+        elif self._declines_requirements(utterance):
+            context.requirements = {}
+        else:
+            return self._recover(state)
+        context.preferences.update(preferences)
+        return self._suggest(context)
+
+    def _handle_recommendation_state(self, state: State, act: DialogAct, utterance: str,
+                                     context: DialogContext) -> tuple[State, str]:
+        if act == DialogAct.REQALTS:
+            preferences = keyword_matching(utterance, self.restaurants)
+            if preferences:
+                context.preferences.update(preferences)
+                context.alternatives.clear()
+                return self._suggest(context)
+            return self._alternative(context)
+        if act == DialogAct.REQUEST:
+            return self._give_info(utterance, context)
+        if act != DialogAct.INFORM:
+            return self._recover(state)
+
+        preferences, requirements = self._extract_information(utterance)
+        if not preferences and not requirements:
+            return self._recover(state)
+        context.preferences.update(preferences)
+        if requirements:
+            context.requirements = {**(context.requirements or {}), **requirements}
+        context.alternatives.clear()
+        return self._suggest(context)
+
+    def _extract_information(self, utterance: str, asked_slot: str | None = None
+                             ) -> tuple[dict[str, str], dict[str, bool]]:
+        preferences = self._extract(utterance, asked_slot)
+        requirements = extract_requirements(utterance)
+        return preferences, requirements
+
+    def _store_early_information(self, utterance: str, context: DialogContext) -> None:
+        preferences, requirements = self._extract_information(utterance)
+        context.preferences.update(preferences)
+        if requirements:
+            context.requirements = {**(context.requirements or {}), **requirements}
+
+    @staticmethod
+    def _declines_requirements(utterance: str) -> bool:
+        words = utterance.replace("'", "").lower().split()
+        phrases = ("no requirements", "no additional requirements", "dont care", "doesnt matter",
+                   "does not matter", "whatever", "nothing else")
+        return any(phrase in " ".join(words) for phrase in phrases) or "any" in words
+
+    def _recover(self, state: State) -> tuple[State, str]:
+        response = self.respond("notunderstood")
+        if state in SLOT_OF_STATE:
+            response = f"{response} {self.respond(ASK_TEMPLATE[SLOT_OF_STATE[state]])}"
+        elif state == State.ASK_ADDITIONAL:
+            response = f"{response} {self.respond('askadditional')}"
+        elif state == State.WELCOME:
+            response = f"{response} {self.respond('welcome')}"
+        return state, response
 
     def _next_question(self, context: DialogContext) -> tuple[State, str]:
         for slot in SLOT_ORDER:
@@ -162,7 +262,7 @@ class DialogManager:
 
     def _give_info(self, utterance: str, context: DialogContext) -> tuple[State, str]:
         if context.restaurant is None:
-            return State.SUGGEST, context.last_utterance
+            return State.SUGGEST, self.respond("notunderstood")
         names = self._requested_info(utterance)
         if not names:
             return State.GIVE_INFO, self.respond("notunderstood")

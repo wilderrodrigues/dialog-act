@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import pickle
-import numpy.typing as npt
 from pathlib import Path
 
 
@@ -15,7 +14,7 @@ class Predictor(ABC):
         raise NotImplementedError("This function should be implemented in a subclass.")
 
     @abstractmethod
-    def predict_one(self, utterance: str) -> npt.NDArray:
+    def predict_one(self, utterance: str) -> str:
         raise NotImplementedError("This function should be implemented in a subclass.")
 
 
@@ -28,6 +27,6 @@ class LogRegPredictor(Predictor):
         with open(self.model_path, 'rb') as file:
             self.model = pickle.load(file)
 
-    def predict_one(self, utterance: str) -> npt.NDArray:
+    def predict_one(self, utterance: str) -> str:
         act = self.model.predict([utterance])
         return act[0]
