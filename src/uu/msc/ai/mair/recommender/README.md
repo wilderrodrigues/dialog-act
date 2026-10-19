@@ -8,14 +8,17 @@ remembered between turns, such as the remaining alternatives, is kept by the cal
 
 The state transition diagram is implemented in [dialog_manager.py](./core/dialog_manager.py). The core is
 `DialogManager.transition(state, act, utterance, context)`, which returns the next state and the system utterance.
-The user utterance is classified with the rule-based classifier of Part 1a; preferences are extracted with
-`keyword_matching`, restaurants are found with `find_restaurants` and all responses come from `data/templates.json`.
+The `chat` command uses the trained logistic-regression dialog-act classifier. Each state handler uses that act to
+decide whether the utterance is valid for the current step; slot and requirement extraction then determines which
+decision in the flow chart to take. Invalid or unrecognized inputs are explained and reprompted without changing the
+dialog context. The manager also accepts preferences and requirements in the opening utterance, and allows preference
+changes after a recommendation. Preferences are extracted with `keyword_matching` and the configured fallback,
+restaurants are found with `find_restaurants`, and responses come from `data/templates.json`.
 
 ```sh
 poetry run dialog-acts chat
 poetry run dialog-acts chat --show-acts   # also print the classified act, state and preferences per turn
 ```
-
 
 ## Reasoning
 

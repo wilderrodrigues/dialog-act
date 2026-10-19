@@ -327,7 +327,7 @@ def chat(
     if model_type.lower() == "logreg":
         model_path = get_root() / "model-zoo" / "Logistic regression" / "log_reg_simple_grouped.pkl"
         dialog_predictor = LogRegPredictor(model_path)
-        logging.info(f"Modeal type '{model_type}' loaded.")
+        logging.info(f"Model type '{model_type}' loaded.")
     elif model_type.lower() == "ann":
         raise NotImplementedError("The Neural Network classifier is not yet implemented in the recommender yet.")
 
