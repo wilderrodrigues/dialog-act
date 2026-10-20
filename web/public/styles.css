@@ -83,13 +83,6 @@ button {
 }
 
 button:disabled { opacity: 0.6; cursor: default; }
-button.secondary {
-  background: transparent;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  margin-top: 12px;
-  justify-self: start;
-}
 
 .error { color: var(--error); margin: 4px 0; }
 

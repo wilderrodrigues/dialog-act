@@ -95,5 +95,3 @@ chatForm.addEventListener("submit", async (event) => {
   fields.forEach((field) => (field.disabled = false));
   messageInput.focus();
 });
-
-document.getElementById("finish").addEventListener("click", () => show("done"));
