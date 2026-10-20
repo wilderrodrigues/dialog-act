@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restaurant Recommender</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main>
+    <section id="intake" class="card">
+      <h1>Restaurant recommender study</h1>
+      <p>
+        In this study you will chat with a dialog system that recommends a restaurant in Cambridge.
+        Before you start, please answer two short questions. Your answers are stored anonymously and
+        are only used for research.
+      </p>
+      <form id="profile-form" novalidate>
+        <label for="age">Age</label>
+        <input id="age" name="age" type="number" inputmode="numeric" min="16" max="120" required>
+
+        <label for="gender">Gender</label>
+        <select id="gender" name="gender" required>
+          <option value="" selected disabled>Select…</option>
+          <option value="female">Female</option>
+          <option value="male">Male</option>
+          <option value="non-binary">Non-binary</option>
+          <option value="other">Other</option>
+          <option value="prefer not to say">Prefer not to say</option>
+        </select>
+
+        <label class="consent">
+          <input id="consent" name="consent" type="checkbox" required>
+          I agree that my answers and the conversation are recorded anonymously for this research.
+        </label>
+
+        <p id="form-error" class="error" role="alert" hidden></p>
+        <button type="submit">Start conversation</button>
+      </form>
+    </section>
+
+    <section id="chat" class="card chat" hidden>
+      <header>
+        <h1>Restaurant recommender</h1>
+        <p class="hint">Tell the system what you are looking for. Say “bye” when you are done.</p>
+      </header>
+      <ol id="messages" aria-live="polite"></ol>
+      <form id="chat-form" autocomplete="off">
+        <input id="message" name="message" maxlength="500" placeholder="Type your message…" aria-label="Your message" required>
+        <button type="submit">Send</button>
+      </form>
+      <button id="finish" class="secondary" type="button">I'm done</button>
+    </section>
+
+    <section id="done" class="card" hidden>
+      <h1>Thank you!</h1>
+      <p>The conversation has ended. The evaluation questionnaire will appear here.</p>
+    </section>
+  </main>
+</body>
+</html>
