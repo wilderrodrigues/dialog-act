@@ -66,4 +66,7 @@ def chat(turn: ChatTurn) -> dict[str, Any]:
     return result
 
 
-app.mount("/", StaticFiles(directory=Path(__file__).parent / "public", html=True), name="public")
+# Locally the API also serves the site; on Vercel public/ is served by the CDN and left out of the function bundle.
+PUBLIC_DIR = Path(__file__).parent / "public"
+if PUBLIC_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=PUBLIC_DIR, html=True), name="public")
