@@ -46,6 +46,9 @@ class Fallback(StrEnum):
     LEVENSHTEIN = "levenshtein"
     BERT = "bert"
 
+class Mode(StrEnum):
+    PATIENT = "patient"
+    EAGER = "eager"
 SLOT_ORDER = ("area", "food", "pricerange")
 ASK_STATE = {"area": State.ASK_AREA, "food": State.ASK_FOOD, "pricerange": State.ASK_PRICE}
 SLOT_OF_STATE = {state: slot for slot, state in ASK_STATE.items()}
@@ -71,12 +74,13 @@ class DialogContext:
 
 class DialogManager:
     def __init__(self, classifier: Predictor, restaurants_path: Path, templates_path: Path,
-                 transparent: bool = True, fallback: Fallback = Fallback.LEVENSHTEIN) -> None:
+                 transparent: bool = True, fallback: Fallback = Fallback.LEVENSHTEIN, mode: Mode = Mode.PATIENT) -> None:
         self.classifier = classifier
         self.restaurants = load_restaurants(restaurants_path)
         self.templates = load_templates(templates_path)
         self.transparent = transparent
         self.fallback = fallback
+        self.mode = mode
         self.encoder = None
         if fallback == Fallback.BERT:
             self.encoder = FrozenDistilBertEncoder()
@@ -219,7 +223,9 @@ class DialogManager:
         return state, response
 
     def _next_question(self, context: DialogContext) -> tuple[State, str]:
-        for slot in SLOT_ORDER:
+        if self.mode == Mode.EAGER and any(context.preferences[slot] is not None for slot in SLOT_ORDER): 
+            return self._suggest(context)
+        for slot in SLOT_ORDER: 
             if context.preferences[slot] is None:
                 return ASK_STATE[slot], self.respond(ASK_TEMPLATE[slot])
         if context.requirements is None:
