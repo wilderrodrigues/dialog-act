@@ -19,7 +19,7 @@ from uu.msc.ai.mair.dialog.model.finetuned_classifier import FineTunedDistilBert
 from uu.msc.ai.mair.dialog.model.nn_classifier import Conv1DClassifier, EmbeddingBagClassifier
 from uu.msc.ai.mair.dialog.model.log_reg_classifier import LogRegModel
 from uu.msc.ai.mair.dialog.model.rule_based_classifier import RuleBasedModel
-from uu.msc.ai.mair.recommender.core.dialog_manager import DialogManager, Fallback
+from uu.msc.ai.mair.recommender.core.dialog_manager import DialogManager, Fallback, Mode
 
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, confusion_matrix, recall_score, precision_score
 import numpy as np
@@ -319,6 +319,7 @@ def chat(
     log_dir: Annotated[Path, typer.Option(help="Directory for the JSON interaction logs.")] = get_root() / "output" / "dialogs",
     transparent: Annotated[bool, typer.Option(help="Explain the reasoning behind a recommendation.")] = True,
     fallback: Annotated[Fallback, typer.Option(help="Slot extraction when no keyword matches.")] = Fallback.LEVENSHTEIN,
+    mode: Annotated[str, typer.Option(help="Dialog mode. 'patient' or 'eager'.")] = "patient"
 ) -> None:
     if model_type.lower() not in ("logreg", "ann"):
         raise ValueError(f"Invalid model: {model_type}. Must be 'logreg' or 'ann'.")
@@ -333,4 +334,4 @@ def chat(
 
     seed_everything(seed=seed)
     DialogManager(classifier=dialog_predictor, restaurants_path=restaurants_path,
-                  templates_path=templates_path, transparent=transparent, fallback = fallback).run(log_dir=log_dir, show_acts=show_acts)
+                  templates_path=templates_path, transparent=transparent, fallback = fallback, mode = Mode(mode)).run(log_dir=log_dir, show_acts=show_acts)
