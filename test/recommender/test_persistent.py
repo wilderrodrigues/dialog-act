@@ -9,12 +9,11 @@ from uu.msc.ai.mair.recommender.core.storage.experiment import (
 from uu.msc.ai.mair.recommender.core.storage.persistent import ExperimentData
 
 
-def make_experiment(*sessions: Session) -> Experiment:
+def make_experiment(session: Session) -> Experiment:
     return Experiment(
-        participant_id="participant-1",
         age=25,
         gender="non-binary",
-        sessions=list(sessions),
+        session=session,
     )
 
 
@@ -39,15 +38,19 @@ def test_update_experiment_creates_an_experiment_file(tmp_path: Path) -> None:
 
     data.update_experiment(experiment)
 
-    assert data._load_experiment() == experiment
+    assert data._load_experiments() == [experiment]
 
 
-def test_update_experiment_appends_sessions_to_an_existing_experiment(tmp_path: Path) -> None:
+def test_update_experiment_appends_an_experiment_to_an_existing_file(tmp_path: Path) -> None:
     data = ExperimentData(tmp_path / "experiment.json")
     first_session = make_session("italian")
     second_session = make_session("thai")
-    data.update_experiment(make_experiment(first_session))
+    first_experiment = make_experiment(first_session)
+    second_experiment = make_experiment(second_session)
+    assert first_experiment.participant_id != second_experiment.participant_id
 
-    data.update_experiment(make_experiment(second_session))
+    data.update_experiment(first_experiment)
+    data.update_experiment(second_experiment)
 
-    assert data._load_experiment().sessions == [first_session, second_session]
+    experiments = data._load_experiments()
+    assert experiments == [first_experiment, second_experiment]

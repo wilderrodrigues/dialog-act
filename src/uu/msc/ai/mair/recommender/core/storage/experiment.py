@@ -1,4 +1,7 @@
+import uuid
+import pydantic
 from pydantic.dataclasses import dataclass
+
 
 
 @dataclass(frozen=True)
@@ -23,7 +26,7 @@ class Session:
 
 @dataclass(frozen=True)
 class Experiment:
-    participant_id: str
     age: int
     gender: str
-    sessions: list[Session]
+    session: Session
+    participant_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
