@@ -31,6 +31,7 @@ import logging
 import typer
 
 from uu.msc.ai.mair.recommender.core.inference_engine import LogRegPredictor
+from uu.msc.ai.mair.recommender.core.storage.persistent import ExperimentData
 
 app = typer.Typer(no_args_is_help=True, help="Dialog: Methods in AI Research.")
 logging.basicConfig(level=logging.INFO)
@@ -319,7 +320,8 @@ def chat(
     log_dir: Annotated[Path, typer.Option(help="Directory for the JSON interaction logs.")] = get_root() / "output" / "dialogs",
     transparent: Annotated[bool, typer.Option(help="Explain the reasoning behind a recommendation.")] = True,
     fallback: Annotated[Fallback, typer.Option(help="Slot extraction when no keyword matches.")] = Fallback.LEVENSHTEIN,
-    mode: Annotated[str, typer.Option(help="Dialog mode. 'patient' or 'eager'.")] = "patient"
+    mode: Annotated[str, typer.Option(help="Dialog mode. 'patient' or 'eager'.")] = "patient",
+    experiment_database: Annotated[Path, typer.Option(help="Path to the database.")] = get_root() / "data" / "experiment" / "database.json",
 ) -> None:
     if model_type.lower() not in ("logreg", "ann"):
         raise ValueError(f"Invalid model: {model_type}. Must be 'logreg' or 'ann'.")
@@ -332,6 +334,12 @@ def chat(
     elif model_type.lower() == "ann":
         raise NotImplementedError("The Neural Network classifier is not yet implemented in the recommender yet.")
 
+    if not experiment_database.parent.exists():
+        experiment_database.parent.mkdir(exist_ok=True, parents=True)
+
+    experiment_storage = ExperimentData(experiment_path=experiment_database)
+
     seed_everything(seed=seed)
     DialogManager(classifier=dialog_predictor, restaurants_path=restaurants_path,
-                  templates_path=templates_path, transparent=transparent, fallback = fallback, mode = Mode(mode)).run(log_dir=log_dir, show_acts=show_acts)
+                  templates_path=templates_path, experiment_storage=experiment_storage, transparent=transparent,
+                  fallback = fallback, mode = Mode(mode)).run(log_dir=log_dir, show_acts=show_acts)
