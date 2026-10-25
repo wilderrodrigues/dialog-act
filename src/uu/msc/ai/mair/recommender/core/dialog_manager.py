@@ -12,6 +12,8 @@ from uu.msc.ai.mair.recommender.core.functions import (find_restaurants, generat
 from uu.msc.ai.mair.recommender.core.inference_engine import Predictor
 from uu.msc.ai.mair.recommender.core.reasoning import Candidate, apply_requirements, choose, extract_requirements
 from uu.msc.ai.mair.dialog.core.encoders import FrozenDistilBertEncoder
+from uu.msc.ai.mair.recommender.core.storage.persistent import ExperimentData
+
 
 class State(IntEnum):
     WELCOME = 1
@@ -75,11 +77,12 @@ class DialogContext:
 
 
 class DialogManager:
-    def __init__(self, classifier: Predictor, restaurants_path: Path, templates_path: Path,
+    def __init__(self, classifier: Predictor, restaurants_path: Path, templates_path: Path, experiment_storage: ExperimentData,
                  transparent: bool = True, fallback: Fallback = Fallback.LEVENSHTEIN, mode: Mode = Mode.PATIENT) -> None:
         self.classifier = classifier
         self.restaurants = load_restaurants(restaurants_path)
         self.templates = load_templates(templates_path)
+        self.experiment_storage = experiment_storage
         self.transparent = transparent
         self.fallback = fallback
         self.mode = mode

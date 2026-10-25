@@ -4,6 +4,7 @@ from uu import get_root
 from uu.msc.ai.mair.recommender.core.dialog_manager import DialogContext, DialogManager, State, Mode
 from uu.msc.ai.mair.recommender.core.functions import DONT_CARE
 from uu.msc.ai.mair.recommender.core.inference_engine import LogRegPredictor
+from uu.msc.ai.mair.recommender.core.storage.persistent import ExperimentData
 
 
 class StubPredictor:
@@ -19,6 +20,7 @@ def make_manager(act: str = "inform", mode: Mode = Mode.PATIENT) -> DialogManage
         classifier=StubPredictor(act),
         restaurants_path=get_root() / "data" / "restaurant_info_extended.csv",
         templates_path=get_root() / "data" / "templates.json",
+        experiment_storage=ExperimentData(get_root() / "data" / "experiment.json"),
         mode=mode
     )
 
@@ -273,6 +275,7 @@ def test_logistic_regression_predictor_smoke_conversation() -> None:
         predictor,
         get_root() / "data" / "restaurant_info_extended.csv",
         get_root() / "data" / "templates.json",
+        experiment_storage=ExperimentData(get_root() / "data" / "experiment.json"),
     )
     context = DialogContext()
     state, _, _ = manager.step(State.WELCOME, "i want a cheap italian restaurant in the south", context)
