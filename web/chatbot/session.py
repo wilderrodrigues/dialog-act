@@ -10,18 +10,23 @@ from chatbot import core_loader
 
 core_loader.install()
 
-from uu.msc.ai.mair.recommender.core.dialog_manager import DialogContext, DialogManager, Fallback, State  # noqa: E402
+from uu.msc.ai.mair.recommender.core.dialog_manager import DialogContext, DialogManager, Fallback, Mode, State  # noqa: E402
 from uu.msc.ai.mair.recommender.core.inference_engine import LogRegPredictor  # noqa: E402
 from uu.msc.ai.mair.recommender.core.reasoning import Candidate  # noqa: E402
 
 
 @lru_cache(maxsize=1)
-def manager() -> DialogManager:
+def classifier() -> LogRegPredictor:
     with core_loader.posix_paths_on_windows():
-        classifier = LogRegPredictor(core_loader.MODEL_PATH)
-    return DialogManager(classifier=classifier, restaurants_path=core_loader.RESTAURANTS_PATH,
-                         templates_path=core_loader.TEMPLATES_PATH,
-                         transparent=True, fallback=Fallback.LEVENSHTEIN)
+        return LogRegPredictor(core_loader.MODEL_PATH)
+
+
+@lru_cache(maxsize=len(Mode))
+def manager(mode: Mode = Mode.PATIENT) -> DialogManager:
+    # The web app stores the results itself (chatbot.storage), so the manager gets no experiment storage.
+    return DialogManager(classifier=classifier(), restaurants_path=core_loader.RESTAURANTS_PATH,
+                         templates_path=core_loader.TEMPLATES_PATH, experiment_storage=None,
+                         transparent=True, fallback=Fallback.LEVENSHTEIN, mode=mode)
 
 
 def dump(state: State, context: DialogContext) -> dict[str, Any]:
@@ -53,10 +58,18 @@ def start() -> tuple[str, dict[str, Any]]:
     return context.last_utterance, dump(State.WELCOME, context)
 
 
-def turn(data: dict[str, Any], utterance: str) -> dict[str, Any]:
+def turn(data: dict[str, Any], utterance: str, mode: Mode = Mode.PATIENT) -> dict[str, Any]:
     state, context = load(data)
     if state == State.TERMINATE:
         raise ValueError("The dialog has already ended.")
-    next_state, system_utterance, act = manager().step(state, utterance, context)
+    next_state, system_utterance, act = manager(mode).step(state, utterance, context)
     return {"system": system_utterance, "act": act, "done": next_state == State.TERMINATE,
             "dialog": dump(next_state, context)}
+
+
+def restaurant_name(row: int | None) -> str | None:
+    return None if row is None else str(manager().restaurants.loc[row, "restaurantname"])
+
+
+def restaurant_food(row: int | None) -> str:
+    return "" if row is None else str(manager().restaurants.loc[row, "food"])
