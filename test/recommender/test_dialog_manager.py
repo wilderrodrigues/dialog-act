@@ -1,9 +1,10 @@
 import pytest
 
 from uu import get_root
-from uu.msc.ai.mair.recommender.core.dialog_manager import DialogContext, DialogManager, State
+from uu.msc.ai.mair.recommender.core.dialog_manager import DialogContext, DialogManager, State, Mode
 from uu.msc.ai.mair.recommender.core.functions import DONT_CARE
 from uu.msc.ai.mair.recommender.core.inference_engine import LogRegPredictor
+from uu.msc.ai.mair.recommender.core.storage.persistent import ExperimentData
 
 
 class StubPredictor:
@@ -14,11 +15,13 @@ class StubPredictor:
         return self.act
 
 
-def make_manager(act: str = "inform") -> DialogManager:
+def make_manager(act: str = "inform", mode: Mode = Mode.PATIENT) -> DialogManager:
     return DialogManager(
         classifier=StubPredictor(act),
         restaurants_path=get_root() / "data" / "restaurant_info_extended.csv",
         templates_path=get_root() / "data" / "templates.json",
+        experiment_storage=ExperimentData(get_root() / "data" / "experiment.json"),
+        mode=mode
     )
 
 
@@ -272,6 +275,7 @@ def test_logistic_regression_predictor_smoke_conversation() -> None:
         predictor,
         get_root() / "data" / "restaurant_info_extended.csv",
         get_root() / "data" / "templates.json",
+        experiment_storage=ExperimentData(get_root() / "data" / "experiment.json"),
     )
     context = DialogContext()
     state, _, _ = manager.step(State.WELCOME, "i want a cheap italian restaurant in the south", context)
@@ -282,3 +286,9 @@ def test_logistic_regression_predictor_smoke_conversation() -> None:
     assert state == State.GIVE_INFO
     state, _, _ = manager.step(state, "thank you", context)
     assert state == State.TERMINATE
+
+def test_eager_suggests_after_first_preference() -> None:
+    manager, context = make_manager(mode=Mode.EAGER), DialogContext()
+    state, _, _ = manager.step(State.WELCOME, "i want italian food", context)
+    assert state == State.SUGGEST
+    assert context.restaurant["food"] == "italian"

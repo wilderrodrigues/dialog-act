@@ -5,12 +5,15 @@ import json
 from datetime import datetime   
 import pandas as pd
 import logging
+import re
 
 from uu.msc.ai.mair.recommender.core.functions import (find_restaurants, generate_response, keyword_matching,
                                                       load_restaurants, load_templates, levenshtein_distance, semantic_similarity)
 from uu.msc.ai.mair.recommender.core.inference_engine import Predictor
 from uu.msc.ai.mair.recommender.core.reasoning import Candidate, apply_requirements, choose, extract_requirements
 from uu.msc.ai.mair.dialog.core.encoders import FrozenDistilBertEncoder
+from uu.msc.ai.mair.recommender.core.storage.persistent import ExperimentData
+
 
 class State(IntEnum):
     WELCOME = 1
@@ -46,6 +49,10 @@ class Fallback(StrEnum):
     LEVENSHTEIN = "levenshtein"
     BERT = "bert"
 
+class Mode(StrEnum):
+    PATIENT = "patient"
+    EAGER = "eager"
+CLOSING_WORDS = {"thanks", "thank", "you", "bye", "goodbye", "okay", "ok", "great", "cheers"}    
 SLOT_ORDER = ("area", "food", "pricerange")
 ASK_STATE = {"area": State.ASK_AREA, "food": State.ASK_FOOD, "pricerange": State.ASK_PRICE}
 SLOT_OF_STATE = {state: slot for slot, state in ASK_STATE.items()}
@@ -70,13 +77,15 @@ class DialogContext:
 
 
 class DialogManager:
-    def __init__(self, classifier: Predictor, restaurants_path: Path, templates_path: Path,
-                 transparent: bool = True, fallback: Fallback = Fallback.LEVENSHTEIN) -> None:
+    def __init__(self, classifier: Predictor, restaurants_path: Path, templates_path: Path, experiment_storage: ExperimentData,
+                 transparent: bool = True, fallback: Fallback = Fallback.LEVENSHTEIN, mode: Mode = Mode.PATIENT) -> None:
         self.classifier = classifier
         self.restaurants = load_restaurants(restaurants_path)
         self.templates = load_templates(templates_path)
+        self.experiment_storage = experiment_storage
         self.transparent = transparent
         self.fallback = fallback
+        self.mode = mode
         self.encoder = None
         if fallback == Fallback.BERT:
             self.encoder = FrozenDistilBertEncoder()
@@ -153,7 +162,7 @@ class DialogManager:
         if act == DialogAct.NEGATE:
             context.requirements = {}
             return self._suggest(context)
-        if act != DialogAct.INFORM:
+        if act not in (DialogAct.INFORM, DialogAct.NULL):
             return self._recover(state)
 
         preferences, requirements = self._extract_information(utterance)
@@ -202,11 +211,21 @@ class DialogManager:
             context.requirements = {**(context.requirements or {}), **requirements}
 
     @staticmethod
+    def _closing_act(act: str, utterance: str) -> str:
+        words = set(utterance.split())
+        if words <= CLOSING_WORDS:
+            if words & {"bye", "goodbye"}:
+                return DialogAct.BYE
+            if words & {"thanks", "thank"}:
+                return DialogAct.THANKYOU
+        return act
+
+    @staticmethod
     def _declines_requirements(utterance: str) -> bool:
         words = utterance.replace("'", "").lower().split()
         phrases = ("no requirements", "no additional requirements", "dont care", "doesnt matter",
                    "does not matter", "whatever", "nothing else")
-        return any(phrase in " ".join(words) for phrase in phrases) or "any" in words
+        return any(phrase in " ".join(words) for phrase in phrases) or "any" in words or "none" in words
 
     def _recover(self, state: State) -> tuple[State, str]:
         response = self.respond("notunderstood")
@@ -219,7 +238,9 @@ class DialogManager:
         return state, response
 
     def _next_question(self, context: DialogContext) -> tuple[State, str]:
-        for slot in SLOT_ORDER:
+        if self.mode == Mode.EAGER and any(context.preferences[slot] is not None for slot in SLOT_ORDER): 
+            return self._suggest(context)
+        for slot in SLOT_ORDER: 
             if context.preferences[slot] is None:
                 return ASK_STATE[slot], self.respond(ASK_TEMPLATE[slot])
         if context.requirements is None:
@@ -269,8 +290,8 @@ class DialogManager:
         return State.GIVE_INFO, " ".join(self.respond(name, **context.restaurant) for name in names)
 
     def step(self, state: State, utterance: str, context: DialogContext) -> tuple[State, str, str]:
-        utterance = utterance.strip().lower()
-        act = self.classifier.predict_one(utterance)
+        utterance = " ".join(re.sub(r"[^a-z0-9 ]", " ", utterance.lower().replace("'", "")).split())
+        act = self._closing_act(self.classifier.predict_one(utterance), utterance)
         next_state, system_utterance = self.transition(state, act, utterance, context)
         context.last_utterance = system_utterance
         return next_state, system_utterance, act
