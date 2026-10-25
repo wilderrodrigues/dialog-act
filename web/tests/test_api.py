@@ -1,4 +1,3 @@
-import importlib.util
 import json
 import subprocess
 import sys
@@ -21,7 +20,6 @@ ANSWERS = {question["id"]: 3 for question in study.QUESTIONNAIRE}
 
 @pytest.fixture(autouse=True)
 def local_database(tmp_path, monkeypatch):
-    monkeypatch.delenv("VERCEL", raising=False)
     monkeypatch.setenv("EXPERIMENT_DIR", str(tmp_path / "experiment"))
     return tmp_path / "experiment" / "database-remy.json"  # PARTICIPANT is run by Remy
 
@@ -47,11 +45,6 @@ def trials_for(system: dict) -> list[dict]:
     return [{"goal_slot": goal["slot"], "goal_value": goal["value"], "started_at": "2026-10-25T12:00:00Z",
              "ended_at": "2026-10-25T12:01:30Z", "restaurant": 0, "nb_prompts": 2, "nb_resets": 1}
             for goal in system["goals"]]
-
-
-@pytest.mark.skipif(importlib.util.find_spec("torch") is not None, reason="torch is installed")
-def test_runs_without_torch():
-    assert "torch" not in sys.modules and "transformers" not in sys.modules
 
 
 def test_index_is_served():
@@ -159,14 +152,6 @@ def test_incomplete_questionnaire_is_rejected():
     answers.pop(10)
     post("/api/results", {**PARTICIPANT, "participant_id": registration["participant_id"], "order": 1,
                           "trials": trials_for(registration["plan"][0]), "answers": answers}, status=422)
-
-
-def test_vercel_refuses_to_lose_results(monkeypatch):
-    monkeypatch.setenv("VERCEL", "1")
-    registration = post("/api/participant", PARTICIPANT)
-    post("/api/results", {**PARTICIPANT, "participant_id": registration["participant_id"], "order": 1,
-                          "trials": trials_for(registration["plan"][0]), "answers": ANSWERS}, status=503)
-    assert client.get("/api/study").json()["storage_error"]
 
 
 def test_merge_keeps_every_record_once(local_database, tmp_path):

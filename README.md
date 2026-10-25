@@ -55,3 +55,6 @@ respective README files.
 
 * [Dialog Acts](./src/uu/msc/ai/mair/dialog/README.md)
 * [Recommender](./src/uu/msc/ai/mair/recommender/README.md)
+
+The web interface for the user study lives in `web/` and uses the same Poetry environment, with the optional `web`
+dependency group (`poetry install --with web`). See [web/README.md](./web/README.md).

@@ -3,7 +3,7 @@
 The researcher screen only shows the persons; this PDF (linked top right) has the full lists. It is generated from
 chatbot/study.py, so run it again after changing the design:
 
-    python scripts/make_overview_pdf.py
+    poetry run python web/scripts/make_overview_pdf.py
 
 Needs Microsoft Edge or Google Chrome (headless print to PDF); set BROWSER to the executable to override.
 """

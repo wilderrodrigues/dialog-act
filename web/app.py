@@ -3,7 +3,7 @@
 The researcher picks a person, the participant gives consent and fills in age, gender and AI usage, then talks to
 both systems (eager and patient mode) three times each and rates each system with the questionnaire.
 
-Run locally with ``uvicorn app:app --reload`` from this directory; on Vercel this file is the FastAPI entrypoint.
+Run from the repository root with ``poetry run uvicorn app:app --app-dir web`` (after ``poetry install --with web``).
 """
 import logging
 import uuid
@@ -90,10 +90,7 @@ def study_overview() -> dict[str, Any]:
     except Exception as error:  # the study can still run; the researcher just does not see who is done
         logger.exception("could not list completed sessions")
         completed, storage_error = {}, str(error)
-    try:
-        storage_dir = str(storage.directory().resolve())
-    except storage.StorageUnavailable:
-        storage_dir = None
+    storage_dir = str(storage.directory().resolve())
     return {**study.overview(), "completed": completed, "storage_error": storage_error, "storage_dir": storage_dir}
 
 
@@ -170,7 +167,5 @@ def save_results(result: SessionResult) -> dict[str, Any]:
     return {"saved": True}
 
 
-# Locally the API also serves the site; on Vercel public/ is served by the CDN and left out of the function bundle.
-PUBLIC_DIR = Path(__file__).parent / "public"
-if PUBLIC_DIR.is_dir():
-    app.mount("/", StaticFiles(directory=PUBLIC_DIR, html=True), name="public")
+# The API also serves the site itself.
+app.mount("/", StaticFiles(directory=Path(__file__).parent / "public", html=True), name="public")

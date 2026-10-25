@@ -1,14 +1,11 @@
 """Runs the existing DialogManager one turn per HTTP request.
 
-Vercel Functions keep no memory between requests, so the dialog state and context travel with every request as
-JSON. Restaurants are stored by their row label in ``restaurant_info_extended.csv`` and looked up again on load.
+The server keeps no state between requests: the dialog state and context travel with every request as JSON. Restaurants are stored by their row label in ``restaurant_info_extended.csv`` and looked up again on load.
 """
 from functools import lru_cache
 from typing import Any
 
-from chatbot import core_loader
-
-core_loader.install()
+from chatbot import core
 
 from uu.msc.ai.mair.recommender.core.dialog_manager import DialogContext, DialogManager, Fallback, Mode, State  # noqa: E402
 from uu.msc.ai.mair.recommender.core.inference_engine import LogRegPredictor  # noqa: E402
@@ -17,15 +14,15 @@ from uu.msc.ai.mair.recommender.core.reasoning import Candidate  # noqa: E402
 
 @lru_cache(maxsize=1)
 def classifier() -> LogRegPredictor:
-    with core_loader.posix_paths_on_windows():
-        return LogRegPredictor(core_loader.MODEL_PATH)
+    with core.posix_paths_on_windows():
+        return LogRegPredictor(core.MODEL_PATH)
 
 
 @lru_cache(maxsize=len(Mode))
 def manager(mode: Mode = Mode.PATIENT) -> DialogManager:
     # The web app stores the results itself (chatbot.storage), so the manager gets no experiment storage.
-    return DialogManager(classifier=classifier(), restaurants_path=core_loader.RESTAURANTS_PATH,
-                         templates_path=core_loader.TEMPLATES_PATH, experiment_storage=None,
+    return DialogManager(classifier=classifier(), restaurants_path=core.RESTAURANTS_PATH,
+                         templates_path=core.TEMPLATES_PATH, experiment_storage=None,
                          transparent=True, fallback=Fallback.LEVENSHTEIN, mode=mode)
 
 

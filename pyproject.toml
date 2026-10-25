@@ -14,7 +14,7 @@ dependencies = [
     "pandas",
     "matplotlib",
     "seaborn",
-    "scikit-learn",
+    "scikit-learn (==1.9.1)",  # the pickled logistic-regression model in model-zoo/ was saved with this version
     "shap",
     "transformers",
     "levenshtein (>=0.27.5,<0.28.0)",
@@ -29,6 +29,15 @@ packages = [{include = "uu", from = "src"}]
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=9.0,<10.0"
+httpx = ">=0.28,<1.0"  # FastAPI's TestClient (web/tests)
+
+# The web interface for the user study (web/): `poetry install --with web`.
+[tool.poetry.group.web]
+optional = true
+
+[tool.poetry.group.web.dependencies]
+fastapi = ">=0.117.1"
+uvicorn = ">=0.30"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

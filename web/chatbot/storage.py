@@ -7,8 +7,7 @@ person, AI usage, goals); the conversations themselves are not stored. The core 
 
 Every researcher gets their own file, ``database-<researcher>.json`` in ``EXPERIMENT_DIR`` (by default the CLI's
 ``data/experiment/``, which git ignores), so the files can be merged later without clashing. Test runs go to
-``test-<researcher>.json`` instead, so they never mix with the real data. The app is meant to
-run locally: a Vercel Function has no persistent disk, so there the files would be lost.
+``test-<researcher>.json`` instead, so they never mix with the real data.
 """
 import logging
 import os
@@ -18,16 +17,14 @@ from pathlib import Path
 from pydantic import TypeAdapter
 from pydantic.dataclasses import dataclass
 
-from chatbot import core_loader
+from uu.msc.ai.mair.recommender.core.storage.experiment import Experiment, Questionnarie, Session, Trial
+from uu.msc.ai.mair.recommender.core.storage.persistent import ExperimentData
 
-core_loader.install()
-
-from uu.msc.ai.mair.recommender.core.storage.experiment import Experiment, Questionnarie, Session, Trial  # noqa: E402
-from uu.msc.ai.mair.recommender.core.storage.persistent import ExperimentData  # noqa: E402
+from chatbot import core
 
 logger = logging.getLogger("chatbot.storage")
 
-DEFAULT_DIR = core_loader.WEB_DIR.parent / "data" / "experiment"
+DEFAULT_DIR = core.REPO_ROOT / "data" / "experiment"
 
 
 @dataclass(frozen=True)
@@ -61,10 +58,6 @@ class StudyExperiment(Experiment):
 STUDY_ADAPTER = TypeAdapter(list[StudyExperiment])
 
 
-class StorageUnavailable(RuntimeError):
-    pass
-
-
 class StudyData(ExperimentData):
     """``ExperimentData`` for the extended records (the core adapter would drop the extra fields)."""
 
@@ -82,8 +75,6 @@ class StudyData(ExperimentData):
 
 
 def directory() -> Path:
-    if os.environ.get("VERCEL"):
-        raise StorageUnavailable("Results are stored in a local file; run the app locally, not on Vercel.")
     return Path(os.environ.get("EXPERIMENT_DIR", DEFAULT_DIR))
 
 

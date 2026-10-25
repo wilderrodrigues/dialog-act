@@ -7,7 +7,7 @@ lives in this directory; the code outside `web/` is used as-is and is not modifi
 
 1. **Researcher**: pick your name (Remy 1–7, Cai 8–14, Dexter 15–21, Wilder 22–28) and the person you are running.
    The screen only shows the persons (finished ones are marked); each person's group, mode order and goals are in
-   the PDF linked top right (`public/study-overview.pdf`, rebuilt with `python scripts/make_overview_pdf.py`).
+   the PDF linked top right (`public/study-overview.pdf`, rebuilt with `poetry run python web/scripts/make_overview_pdf.py`).
    **Test** runs one conversation with each system (eager and patient, goal "test") instead of three, and saves it to `test-<name>.json`, so you can check
    that saving works on your computer without touching the real data. The screen shows the folder results go to.
 2. **Informed consent**, then **participant info** (until the first conversation starts, *Back* returns to the
@@ -30,13 +30,12 @@ The progress is kept in the browser's `sessionStorage`, so reloading the page do
 web/
 ├── app.py                      FastAPI app: /api/study, /api/participant, /api/dialog, /api/chat, /api/results
 ├── chatbot/
-│   ├── core_loader.py          makes the existing code importable without torch / transformers
+│   ├── core.py                 paths to the restaurant data, templates and model (+ Windows fix for the pickle)
 │   ├── session.py              runs DialogManager.step() one turn per request, in eager or patient mode
 │   ├── storage.py              stores the results in the core Experiment format (local JSON file)
 │   └── study.py                the experiment design: researchers, goals per person, questionnaire
 ├── public/                     index.html, app.js, styles.css
 ├── scripts/
-│   ├── bundle_core.py          copies src/, the restaurant data, templates and model into _core/ at build time
 │   ├── make_overview_pdf.py    builds public/study-overview.pdf (all persons and goals) from study.py
 │   └── merge_results.py        merges the researchers' database-<name>.json files into one
 └── tests/test_api.py
@@ -62,25 +61,20 @@ Every researcher runs the study on their own laptop. Afterwards, send `database-
 (Teams, SURFdrive, e-mail; not git), who merges the four files into one:
 
 ```sh
-python scripts/merge_results.py data/experiment/merged.json database-remy.json database-cai.json database-dexter.json database-wilder.json
+poetry run python web/scripts/merge_results.py data/experiment/merged.json database-remy.json database-cai.json database-dexter.json database-wilder.json
 ```
 
 ## Run locally
 
+The web interface is part of the Poetry project; its extra dependencies (FastAPI, uvicorn) are the optional `web`
+group in the root `pyproject.toml`. From the repository root (Python and Poetry as in the main README):
+
 ```sh
-cd web
-python -m venv .venv
-.venv/Scripts/activate            # Windows; use `source .venv/bin/activate` on macOS/Linux
-pip install fastapi numpy pandas scikit-learn==1.9.1 "levenshtein>=0.27.5,<0.28.0" "pydantic>=2.14.1,<3" uvicorn
-uvicorn app:app --reload
+poetry install --with web
+poetry run uvicorn app:app --app-dir web
 ```
 
-Open http://localhost:8000 and keep the terminal open during the session. Tests: `pip install pytest httpx` and `pytest tests`.
+Open http://localhost:8000 and keep the terminal open during the session. Tests: `poetry run pytest web/tests`.
 
-## Vercel
-
-The Vercel configuration (`[tool.vercel]`, `scripts/bundle_core.py`) still works for the chat, but a Vercel
-Function has no persistent disk, so the results file would be lost. On Vercel the app therefore refuses to save
-results; run the study locally.
-
-`scikit-learn` is pinned to 1.9.1 because that version pickled the model; change it only after retraining.
+`scikit-learn` is pinned to 1.9.1 in the root `pyproject.toml` because that version pickled the model; change it
+only after retraining.
