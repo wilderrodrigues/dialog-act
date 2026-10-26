@@ -208,9 +208,18 @@ for (const button of document.querySelectorAll("[data-back]")) {
 
 // Chat --------------------------------------------------------------------------------------------------------
 
-// The info button next to the chat shows the instructions the participant read before the first conversation.
+// The info button next to the chat shows the instructions the participant read before the first conversation,
+// followed by tips for when they get stuck; the "stuck" button opens the same dialog at those tips.
+const infoDialog = document.getElementById("info-dialog");
 document.getElementById("info-dialog-steps").append(document.querySelector("#instructions .steps").cloneNode(true));
-document.getElementById("chat-info").addEventListener("click", () => document.getElementById("info-dialog").showModal());
+document.getElementById("chat-info").addEventListener("click", () => {
+  infoDialog.showModal();
+  infoDialog.scrollTop = 0;
+});
+document.getElementById("chat-stuck").addEventListener("click", () => {
+  infoDialog.showModal();
+  document.getElementById("stuck-title").scrollIntoView({ block: "start" });
+});
 
 // A conversation starts as soon as the chat opens (there is no separate goal screen); on a failure the participant
 // can retry from the chat itself.
