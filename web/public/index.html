@@ -86,16 +86,62 @@
       <h1>Instructions</h1>
       <p>You will talk to two restaurant recommender systems: <strong>System A</strong> and <strong>System B</strong>.</p>
       <ol class="steps">
-        <li>With each system you have <strong>three short conversations</strong>.</li>
-        <li>Before every conversation you get a <strong>goal</strong>, for example “try to find a restaurant in
-          the north part of town that you like”. The goal is your starting point.
-          Chat with the system in English until <strong>you are satisfied</strong> and have found a restaurant that
-          suits you. Reaching the goal does not mean the conversation is over: we want to see how you talk with the
-          system.</li>
-        <li>You may ask about the recommended restaurant, such as its phone number or address.</li>
-        <li>When you are done, <strong>say goodbye</strong> (or thank the system) to end the conversation.</li>
-        <li>After three conversations you answer <strong>ten short questions</strong> about that system. Then you
-          do the same with the other system.</li>
+        <li>You will have <strong>three short interactions</strong> with each of the recommender systems.</li>
+        <li>Before every interaction, you will be given a <strong>goal</strong>. For example: “try to find a restaurant in
+          the north part of town that you like”. The goal will be your starting point.</li>
+        <li>The recommender system's abilities are tied to its AI model, which has been trained on very limited data. It means that you cannot
+        have a free and fluid conversation with it. The options are limited to the following:
+          <ol>Food type: Chinese; French; Thai; British; European; and International.</ol>
+          <ol>Area: North; East; South; and West.</ol>
+          <ol>Price range: Cheap; Moderate; and Expensive. If you say something like "a fancy restaurant", the system will try to match you with an expensive one.</ol>
+        </li>
+        <li>Please, limit the conversations to English <strong>only</strong>. You can end the conversation either after the
+          recommender system have found a matching restaurant or not. For example, it might reply that no matchings were found.</li>
+        <li>In the case the recommender system finds a restaurant, you may ask further questions about the phone number or address - if those have not been mentioned.</li>
+        <li>To end the interaction type either "Goodbye" or "Thank you".</li>
+        <li>After three interactions, you will be asked to answer to <strong>ten short questions</strong> about the recommender system.</li>
+        <li>Example of an interaction:
+          <ol>
+            S: Hello, welcome to the Cambridge restaurant recommendation system. How may I help you?
+          </ol>
+          <ol>
+            U: I am looking for expensive british food in the centre
+          </ol>
+          <ol>
+            S: I found some restaurants matching your preferences. Do you have any additional requirements?
+          </ol>
+          <ol>
+            U: none
+          </ol>
+          <ol>
+            S: Fitzbillies restaurant is a nice expensive british restaurant in the centre.
+          </ol>
+          <ol>
+            U: what is the phone number
+          </ol>
+          <ol>
+            S: The phone number of fitzbillies restaurant is 01223 352500.
+          </ol>
+          <ol>
+            U: address please
+          </ol>
+          <ol>
+            S: Fitzbillies restaurant is located at 51 trumpington street city centre.
+          </ol>
+          <ol>
+            U: post code
+          </ol>
+          <ol>
+            S: The postcode of fitzbillies restaurant is c.b 1.
+          </ol>
+          <ol>
+            U: thank you goodbye
+          </ol>
+          <ol>
+            S: Good bye!
+          </ol>
+        </li>
+
       </ol>
       <div class="actions">
         <button type="button" class="secondary" data-back="info">Back</button>
