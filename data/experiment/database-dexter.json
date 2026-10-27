@@ -1,0 +1,590 @@
+[
+  {
+    "age": 22,
+    "gender": "male",
+    "session": {
+      "mode": "patient",
+      "trials": [
+        {
+          "duration": 173,
+          "nb_resets": 0,
+          "nb_prompts": 18,
+          "food_type": "",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "north",
+          "restaurant": null,
+          "started_at": "2026-10-25T19:34:22.130000Z"
+        },
+        {
+          "duration": 170,
+          "nb_resets": 0,
+          "nb_prompts": 12,
+          "food_type": "",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "cheap",
+          "restaurant": null,
+          "started_at": "2026-10-25T19:37:19.877000Z"
+        },
+        {
+          "duration": 37,
+          "nb_resets": 0,
+          "nb_prompts": 6,
+          "food_type": "thai",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                3,
+                1
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                1
+              ],
+              [
+                7,
+                5
+              ],
+              [
+                8,
+                4
+              ],
+              [
+                9,
+                2
+              ],
+              [
+                10,
+                2
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "thai",
+          "restaurant": "sala thong",
+          "started_at": "2026-10-25T19:40:23.533000Z"
+        }
+      ],
+      "label": "System A",
+      "order": 1
+    },
+    "participant_id": "630a300a-774f-4e78-ba7d-c1f425d6608f",
+    "researcher": "Dexter",
+    "person": 15,
+    "group": "B",
+    "ai_usage": 4,
+    "test": false,
+    "completed_at": "2026-10-25T19:43:08.163327Z"
+  },
+  {
+    "age": 22,
+    "gender": "male",
+    "session": {
+      "mode": "eager",
+      "trials": [
+        {
+          "duration": 217,
+          "nb_resets": 0,
+          "nb_prompts": 7,
+          "food_type": "steakhouse",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "east",
+          "restaurant": "sitar tandoori",
+          "started_at": "2026-10-25T19:43:08.179000Z"
+        },
+        {
+          "duration": 137,
+          "nb_resets": 0,
+          "nb_prompts": 13,
+          "food_type": "bistro",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "moderate",
+          "restaurant": "clowns cafe",
+          "started_at": "2026-10-25T19:46:50.052000Z"
+        },
+        {
+          "duration": 284,
+          "nb_resets": 0,
+          "nb_prompts": 23,
+          "food_type": "thai",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                1
+              ],
+              [
+                4,
+                1
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                1
+              ],
+              [
+                7,
+                1
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                2
+              ],
+              [
+                10,
+                2
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "international",
+          "restaurant": "lan hong house",
+          "started_at": "2026-10-25T19:49:35.355000Z"
+        }
+      ],
+      "label": "System B",
+      "order": 2
+    },
+    "participant_id": "630a300a-774f-4e78-ba7d-c1f425d6608f",
+    "researcher": "Dexter",
+    "person": 15,
+    "group": "B",
+    "ai_usage": 4,
+    "test": false,
+    "completed_at": "2026-10-25T19:56:02.227226Z"
+  },
+  {
+    "age": 22,
+    "gender": "female",
+    "session": {
+      "mode": "patient",
+      "trials": [
+        {
+          "duration": 457,
+          "nb_resets": 0,
+          "nb_prompts": 6,
+          "food_type": "",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "east",
+          "restaurant": null,
+          "started_at": "2026-10-26T12:24:36.306000Z"
+        },
+        {
+          "duration": 161,
+          "nb_resets": 0,
+          "nb_prompts": 6,
+          "food_type": "european",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "moderate",
+          "restaurant": "hotel du vin and bistro",
+          "started_at": "2026-10-26T12:32:19.597000Z"
+        },
+        {
+          "duration": 196,
+          "nb_resets": 0,
+          "nb_prompts": 9,
+          "food_type": "",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                4
+              ],
+              [
+                8,
+                4
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                3
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "chinese",
+          "restaurant": null,
+          "started_at": "2026-10-26T12:35:01.981000Z"
+        }
+      ],
+      "label": "System A",
+      "order": 1
+    },
+    "participant_id": "090b54ec-ab5c-4c29-8f5c-84d487aa1b25",
+    "researcher": "Dexter",
+    "person": 16,
+    "group": "B",
+    "ai_usage": 3,
+    "test": false,
+    "completed_at": "2026-10-26T12:45:57.017397Z"
+  },
+  {
+    "age": 22,
+    "gender": "female",
+    "session": {
+      "mode": "eager",
+      "trials": [
+        {
+          "duration": 133,
+          "nb_resets": 0,
+          "nb_prompts": 7,
+          "food_type": "asian oriental",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "north",
+          "restaurant": "golden wok",
+          "started_at": "2026-10-26T12:45:57.029000Z"
+        },
+        {
+          "duration": 137,
+          "nb_resets": 0,
+          "nb_prompts": 15,
+          "food_type": "indian",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "cheap",
+          "restaurant": "royal spice",
+          "started_at": "2026-10-26T12:48:12.474000Z"
+        },
+        {
+          "duration": 151,
+          "nb_resets": 0,
+          "nb_prompts": 6,
+          "food_type": "thai",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                4
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                4
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                4
+              ],
+              [
+                9,
+                4
+              ],
+              [
+                10,
+                4
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "thai",
+          "restaurant": "bangkok city",
+          "started_at": "2026-10-26T12:50:35.090000Z"
+        }
+      ],
+      "label": "System B",
+      "order": 2
+    },
+    "participant_id": "090b54ec-ab5c-4c29-8f5c-84d487aa1b25",
+    "researcher": "Dexter",
+    "person": 16,
+    "group": "B",
+    "ai_usage": 3,
+    "test": false,
+    "completed_at": "2026-10-26T12:54:18.068565Z"
+  },
+  {
+    "age": 23,
+    "gender": "other",
+    "session": {
+      "mode": "patient",
+      "trials": [
+        {
+          "duration": 288,
+          "nb_resets": 0,
+          "nb_prompts": 20,
+          "food_type": "",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "south",
+          "restaurant": null,
+          "started_at": "2026-10-26T18:14:36.997000Z"
+        },
+        {
+          "duration": 117,
+          "nb_resets": 0,
+          "nb_prompts": 10,
+          "food_type": "gastropub",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "expensive",
+          "restaurant": "the slug and lettuce",
+          "started_at": "2026-10-26T18:19:26.052000Z"
+        },
+        {
+          "duration": 96,
+          "nb_resets": 0,
+          "nb_prompts": 15,
+          "food_type": "gastropub",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                5
+              ],
+              [
+                5,
+                4
+              ],
+              [
+                6,
+                2
+              ],
+              [
+                7,
+                5
+              ],
+              [
+                8,
+                5
+              ],
+              [
+                9,
+                2
+              ],
+              [
+                10,
+                2
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "british",
+          "restaurant": "backstreet bistro",
+          "started_at": "2026-10-26T18:21:34.276000Z"
+        }
+      ],
+      "label": "System A",
+      "order": 1
+    },
+    "participant_id": "6718f09a-c880-4426-8f75-7c62a3f6428d",
+    "researcher": "Dexter",
+    "person": 17,
+    "group": "B",
+    "ai_usage": 2,
+    "test": false,
+    "completed_at": "2026-10-26T18:28:02.136136Z"
+  },
+  {
+    "age": 23,
+    "gender": "other",
+    "session": {
+      "mode": "eager",
+      "trials": [
+        {
+          "duration": 46,
+          "nb_resets": 0,
+          "nb_prompts": 6,
+          "food_type": "italian",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "east",
+          "restaurant": "pizza hut fen ditton",
+          "started_at": "2026-10-26T18:28:02.150000Z"
+        },
+        {
+          "duration": 89,
+          "nb_resets": 0,
+          "nb_prompts": 19,
+          "food_type": "indian",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "moderate",
+          "restaurant": "mahal of cambridge",
+          "started_at": "2026-10-26T18:28:50.248000Z"
+        },
+        {
+          "duration": 42,
+          "nb_resets": 0,
+          "nb_prompts": 4,
+          "food_type": "chinese",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                5
+              ],
+              [
+                2,
+                4
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                4,
+                1
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                4
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                4
+              ],
+              [
+                10,
+                3
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "chinese",
+          "restaurant": "shanghai family restaurant",
+          "started_at": "2026-10-26T18:30:20.843000Z"
+        }
+      ],
+      "label": "System B",
+      "order": 2
+    },
+    "participant_id": "6718f09a-c880-4426-8f75-7c62a3f6428d",
+    "researcher": "Dexter",
+    "person": 17,
+    "group": "B",
+    "ai_usage": 2,
+    "test": false,
+    "completed_at": "2026-10-26T18:32:17.348081Z"
+  }
+]

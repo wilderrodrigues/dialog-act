@@ -1,0 +1,290 @@
+[
+  {
+    "age": 23,
+    "gender": "male",
+    "session": {
+      "mode": "patient",
+      "trials": [
+        {
+          "duration": 73,
+          "nb_resets": 0,
+          "nb_prompts": 8,
+          "food_type": "",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                3,
+                1
+              ],
+              [
+                4,
+                1
+              ],
+              [
+                5,
+                1
+              ],
+              [
+                6,
+                1
+              ],
+              [
+                7,
+                1
+              ],
+              [
+                8,
+                1
+              ],
+              [
+                9,
+                1
+              ],
+              [
+                10,
+                1
+              ]
+            ]
+          },
+          "goal_slot": "test",
+          "goal_value": "test",
+          "restaurant": null,
+          "started_at": "2026-10-25T19:06:34.998000Z"
+        }
+      ],
+      "label": "System A",
+      "order": 1
+    },
+    "participant_id": "6419ca58-09ba-405a-a418-380c127aaa7f",
+    "researcher": "Dexter",
+    "person": 15,
+    "group": "B",
+    "ai_usage": 3,
+    "test": true,
+    "completed_at": "2026-10-25T19:08:11.311607Z"
+  },
+  {
+    "age": 23,
+    "gender": "male",
+    "session": {
+      "mode": "eager",
+      "trials": [
+        {
+          "duration": 19,
+          "nb_resets": 0,
+          "nb_prompts": 2,
+          "food_type": "european",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                3,
+                1
+              ],
+              [
+                4,
+                1
+              ],
+              [
+                5,
+                1
+              ],
+              [
+                6,
+                1
+              ],
+              [
+                7,
+                1
+              ],
+              [
+                8,
+                1
+              ],
+              [
+                9,
+                1
+              ],
+              [
+                10,
+                1
+              ]
+            ]
+          },
+          "goal_slot": "test",
+          "goal_value": "test",
+          "restaurant": "cambridge lodge restaurant",
+          "started_at": "2026-10-25T19:08:11.332000Z"
+        }
+      ],
+      "label": "System B",
+      "order": 2
+    },
+    "participant_id": "6419ca58-09ba-405a-a418-380c127aaa7f",
+    "researcher": "Dexter",
+    "person": 15,
+    "group": "B",
+    "ai_usage": 3,
+    "test": true,
+    "completed_at": "2026-10-25T19:08:41.952245Z"
+  },
+  {
+    "age": 23,
+    "gender": "male",
+    "session": {
+      "mode": "patient",
+      "trials": [
+        {
+          "duration": 439,
+          "nb_resets": 0,
+          "nb_prompts": 26,
+          "food_type": "thai",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                3,
+                1
+              ],
+              [
+                4,
+                1
+              ],
+              [
+                5,
+                1
+              ],
+              [
+                6,
+                1
+              ],
+              [
+                7,
+                1
+              ],
+              [
+                8,
+                1
+              ],
+              [
+                9,
+                1
+              ],
+              [
+                10,
+                1
+              ]
+            ]
+          },
+          "goal_slot": "test",
+          "goal_value": "test",
+          "restaurant": "lan hong house",
+          "started_at": "2026-10-25T19:10:14.444000Z"
+        }
+      ],
+      "label": "System A",
+      "order": 1
+    },
+    "participant_id": "f725c299-fe00-4ffd-8fdf-786bc1c1763a",
+    "researcher": "Dexter",
+    "person": 15,
+    "group": "B",
+    "ai_usage": 4,
+    "test": true,
+    "completed_at": "2026-10-25T19:17:42.986350Z"
+  },
+  {
+    "age": 23,
+    "gender": "male",
+    "session": {
+      "mode": "eager",
+      "trials": [
+        {
+          "duration": 82,
+          "nb_resets": 0,
+          "nb_prompts": 9,
+          "food_type": "british",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                3,
+                1
+              ],
+              [
+                4,
+                1
+              ],
+              [
+                5,
+                1
+              ],
+              [
+                6,
+                1
+              ],
+              [
+                7,
+                1
+              ],
+              [
+                8,
+                1
+              ],
+              [
+                9,
+                1
+              ],
+              [
+                10,
+                1
+              ]
+            ]
+          },
+          "goal_slot": "test",
+          "goal_value": "test",
+          "restaurant": "the cambridge chop house",
+          "started_at": "2026-10-25T19:17:43.005000Z"
+        }
+      ],
+      "label": "System B",
+      "order": 2
+    },
+    "participant_id": "f725c299-fe00-4ffd-8fdf-786bc1c1763a",
+    "researcher": "Dexter",
+    "person": 15,
+    "group": "B",
+    "ai_usage": 4,
+    "test": true,
+    "completed_at": "2026-10-25T19:19:22.964585Z"
+  }
+]
