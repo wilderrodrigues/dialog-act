@@ -1,0 +1,786 @@
+[
+  {
+    "age": 29,
+    "gender": "female",
+    "session": {
+      "mode": "eager",
+      "trials": [
+        {
+          "duration": 180,
+          "nb_resets": 0,
+          "nb_prompts": 10,
+          "food_type": "asian oriental",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "north",
+          "restaurant": "saigon city",
+          "started_at": "2026-10-25T13:56:09.065000Z"
+        },
+        {
+          "duration": 99,
+          "nb_resets": 0,
+          "nb_prompts": 6,
+          "food_type": "spanish",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "cheap",
+          "restaurant": "la raza",
+          "started_at": "2026-10-25T13:59:15.439000Z"
+        },
+        {
+          "duration": 61,
+          "nb_resets": 0,
+          "nb_prompts": 5,
+          "food_type": "thai",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                2
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                2
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "thai",
+          "restaurant": "lan hong house",
+          "started_at": "2026-10-25T14:00:59.715000Z"
+        }
+      ],
+      "label": "System A",
+      "order": 1
+    },
+    "participant_id": "f686bd7d-9504-4bde-8c5e-f09e7507b7b2",
+    "researcher": "Remy",
+    "person": 1,
+    "group": "A",
+    "ai_usage": 2,
+    "test": false,
+    "completed_at": "2026-10-25T14:02:38.821865Z"
+  },
+  {
+    "age": 29,
+    "gender": "female",
+    "session": {
+      "mode": "patient",
+      "trials": [
+        {
+          "duration": 172,
+          "nb_resets": 0,
+          "nb_prompts": 11,
+          "food_type": "british",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "east",
+          "restaurant": "grafton hotel restaurant",
+          "started_at": "2026-10-25T14:02:38.862000Z"
+        },
+        {
+          "duration": 97,
+          "nb_resets": 0,
+          "nb_prompts": 7,
+          "food_type": "british",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "moderate",
+          "restaurant": "saint johns chop house",
+          "started_at": "2026-10-25T14:05:33.941000Z"
+        },
+        {
+          "duration": 8303,
+          "nb_resets": 0,
+          "nb_prompts": 6,
+          "food_type": "italian",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                2
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                3
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "international",
+          "restaurant": "pizza hut city centre",
+          "started_at": "2026-10-25T14:07:13.998000Z"
+        }
+      ],
+      "label": "System B",
+      "order": 2
+    },
+    "participant_id": "f686bd7d-9504-4bde-8c5e-f09e7507b7b2",
+    "researcher": "Remy",
+    "person": 1,
+    "group": "A",
+    "ai_usage": 2,
+    "test": false,
+    "completed_at": "2026-10-25T16:26:20.307793Z"
+  },
+  {
+    "age": 26,
+    "gender": "female",
+    "session": {
+      "mode": "eager",
+      "trials": [
+        {
+          "duration": 180,
+          "nb_resets": 0,
+          "nb_prompts": 8,
+          "food_type": "asian oriental",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "east",
+          "restaurant": "saigon city",
+          "started_at": "2026-10-27T08:49:35.442000Z"
+        },
+        {
+          "duration": 131,
+          "nb_resets": 0,
+          "nb_prompts": 11,
+          "food_type": "italian",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "moderate",
+          "restaurant": "pizza hut cherry hinton",
+          "started_at": "2026-10-27T08:52:38.036000Z"
+        },
+        {
+          "duration": 88,
+          "nb_resets": 0,
+          "nb_prompts": 4,
+          "food_type": "italian",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                5
+              ],
+              [
+                5,
+                4
+              ],
+              [
+                6,
+                2
+              ],
+              [
+                7,
+                4
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                1
+              ],
+              [
+                10,
+                2
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "chinese",
+          "restaurant": "pizza hut cherry hinton",
+          "started_at": "2026-10-27T08:54:50.626000Z"
+        }
+      ],
+      "label": "System A",
+      "order": 1
+    },
+    "participant_id": "8aad2462-7df7-4ce5-8cb0-461a29875f16",
+    "researcher": "Remy",
+    "person": 2,
+    "group": "A",
+    "ai_usage": 5,
+    "test": false,
+    "completed_at": "2026-10-27T08:57:59.403558Z"
+  },
+  {
+    "age": 26,
+    "gender": "female",
+    "session": {
+      "mode": "patient",
+      "trials": [
+        {
+          "duration": 185,
+          "nb_resets": 0,
+          "nb_prompts": 15,
+          "food_type": "",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "north",
+          "restaurant": null,
+          "started_at": "2026-10-27T08:57:59.419000Z"
+        },
+        {
+          "duration": 38,
+          "nb_resets": 0,
+          "nb_prompts": 6,
+          "food_type": "chinese",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "cheap",
+          "restaurant": "the lucky star",
+          "started_at": "2026-10-27T09:01:05.720000Z"
+        },
+        {
+          "duration": 59,
+          "nb_resets": 0,
+          "nb_prompts": 8,
+          "food_type": "italian",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                4
+              ],
+              [
+                8,
+                4
+              ],
+              [
+                9,
+                2
+              ],
+              [
+                10,
+                3
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "thai",
+          "restaurant": "zizzi cambridge",
+          "started_at": "2026-10-27T09:01:46.013000Z"
+        }
+      ],
+      "label": "System B",
+      "order": 2
+    },
+    "participant_id": "8aad2462-7df7-4ce5-8cb0-461a29875f16",
+    "researcher": "Remy",
+    "person": 2,
+    "group": "A",
+    "ai_usage": 5,
+    "test": false,
+    "completed_at": "2026-10-27T09:03:29.155048Z"
+  },
+  {
+    "age": 58,
+    "gender": "female",
+    "session": {
+      "mode": "eager",
+      "trials": [
+        {
+          "duration": 64,
+          "nb_resets": 0,
+          "nb_prompts": 7,
+          "food_type": "chinese",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "south",
+          "restaurant": "peking restaurant",
+          "started_at": "2026-10-27T09:04:25.088000Z"
+        },
+        {
+          "duration": 149,
+          "nb_resets": 0,
+          "nb_prompts": 9,
+          "food_type": "chinese",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "expensive",
+          "restaurant": "peking restaurant",
+          "started_at": "2026-10-27T09:05:31.924000Z"
+        },
+        {
+          "duration": 27,
+          "nb_resets": 0,
+          "nb_prompts": 5,
+          "food_type": "italian",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                4
+              ],
+              [
+                6,
+                2
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                2
+              ],
+              [
+                9,
+                2
+              ],
+              [
+                10,
+                3
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "british",
+          "restaurant": "zizzi cambridge",
+          "started_at": "2026-10-27T09:08:02.883000Z"
+        }
+      ],
+      "label": "System A",
+      "order": 1
+    },
+    "participant_id": "aeea1929-780f-49ca-bbe9-4b4f28e6c3e7",
+    "researcher": "Remy",
+    "person": 3,
+    "group": "A",
+    "ai_usage": 4,
+    "test": false,
+    "completed_at": "2026-10-27T09:09:04.023550Z"
+  },
+  {
+    "age": 58,
+    "gender": "female",
+    "session": {
+      "mode": "patient",
+      "trials": [
+        {
+          "duration": 45,
+          "nb_resets": 0,
+          "nb_prompts": 10,
+          "food_type": "chinese",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "east",
+          "restaurant": "the hotpot",
+          "started_at": "2026-10-27T09:09:04.035000Z"
+        },
+        {
+          "duration": 63,
+          "nb_resets": 0,
+          "nb_prompts": 13,
+          "food_type": "",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "moderate",
+          "restaurant": null,
+          "started_at": "2026-10-27T09:09:51.096000Z"
+        },
+        {
+          "duration": 34,
+          "nb_resets": 0,
+          "nb_prompts": 8,
+          "food_type": "",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                4
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                4
+              ],
+              [
+                8,
+                4
+              ],
+              [
+                9,
+                2
+              ],
+              [
+                10,
+                2
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "chinese",
+          "restaurant": null,
+          "started_at": "2026-10-27T09:10:56.036000Z"
+        }
+      ],
+      "label": "System B",
+      "order": 2
+    },
+    "participant_id": "aeea1929-780f-49ca-bbe9-4b4f28e6c3e7",
+    "researcher": "Remy",
+    "person": 3,
+    "group": "A",
+    "ai_usage": 4,
+    "test": false,
+    "completed_at": "2026-10-27T09:13:37.029773Z"
+  },
+  {
+    "age": 29,
+    "gender": "male",
+    "session": {
+      "mode": "eager",
+      "trials": [
+        {
+          "duration": 24,
+          "nb_resets": 0,
+          "nb_prompts": 4,
+          "food_type": "italian",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "west",
+          "restaurant": "prezzo",
+          "started_at": "2026-10-27T10:54:00.981000Z"
+        },
+        {
+          "duration": 77,
+          "nb_resets": 0,
+          "nb_prompts": 3,
+          "food_type": "chinese",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "cheap",
+          "restaurant": "the missing sock",
+          "started_at": "2026-10-27T10:54:26.684000Z"
+        },
+        {
+          "duration": 8,
+          "nb_resets": 0,
+          "nb_prompts": 2,
+          "food_type": "italian",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                2
+              ],
+              [
+                7,
+                2
+              ],
+              [
+                8,
+                2
+              ],
+              [
+                9,
+                2
+              ],
+              [
+                10,
+                2
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "italian",
+          "restaurant": "pizza hut cherry hinton",
+          "started_at": "2026-10-27T10:55:44.813000Z"
+        }
+      ],
+      "label": "System A",
+      "order": 1
+    },
+    "participant_id": "5bfff032-c43a-4a82-a397-1ee8e8943eb0",
+    "researcher": "Remy",
+    "person": 4,
+    "group": "A",
+    "ai_usage": 5,
+    "test": false,
+    "completed_at": "2026-10-27T10:56:18.729442Z"
+  },
+  {
+    "age": 29,
+    "gender": "male",
+    "session": {
+      "mode": "patient",
+      "trials": [
+        {
+          "duration": 32,
+          "nb_resets": 0,
+          "nb_prompts": 7,
+          "food_type": "italian",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "south",
+          "restaurant": "la margherita",
+          "started_at": "2026-10-27T10:56:18.743000Z"
+        },
+        {
+          "duration": 104,
+          "nb_resets": 0,
+          "nb_prompts": 9,
+          "food_type": "",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "expensive",
+          "restaurant": null,
+          "started_at": "2026-10-27T10:56:52.616000Z"
+        },
+        {
+          "duration": 16,
+          "nb_resets": 0,
+          "nb_prompts": 5,
+          "food_type": "british",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                3
+              ],
+              [
+                8,
+                3
+              ],
+              [
+                9,
+                2
+              ],
+              [
+                10,
+                3
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "british",
+          "restaurant": "fitzbillies restaurant",
+          "started_at": "2026-10-27T10:58:37.748000Z"
+        }
+      ],
+      "label": "System B",
+      "order": 2
+    },
+    "participant_id": "5bfff032-c43a-4a82-a397-1ee8e8943eb0",
+    "researcher": "Remy",
+    "person": 4,
+    "group": "A",
+    "ai_usage": 5,
+    "test": false,
+    "completed_at": "2026-10-27T10:59:46.128560Z"
+  }
+]
