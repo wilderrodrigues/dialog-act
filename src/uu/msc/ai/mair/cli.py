@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import torch
@@ -7,6 +8,8 @@ from torch.utils.data import DataLoader
 
 import pickle
 import time
+
+import pandas as pd
 
 from uu import get_root
 from uu.msc.ai.mair.dialog.core.datasets import DialogActsDataset, DatasetFactory
@@ -343,3 +346,46 @@ def chat(
     DialogManager(classifier=dialog_predictor, restaurants_path=restaurants_path,
                   templates_path=templates_path, experiment_storage=experiment_storage, transparent=transparent,
                   fallback = fallback, mode = Mode(mode)).run(log_dir=log_dir, show_acts=show_acts)
+
+
+@app.command(name="data-prep", help="Prepares the collected data for the statistical tests")
+def data_prep(
+    experiment_dir: Annotated[Path, typer.Option(help="Path to the experiment directory.")] = get_root() / "data" / "experiment",
+    datafile_prefix: Annotated[str, typer.Option(help="Data files prefixe. It is defaulted to 'database'")] = "database",
+) -> None:
+    participants = []
+    for database_file in experiment_dir.iterdir():
+        if datafile_prefix.lower() in str(database_file).lower():
+            with database_file.open() as fd:
+                json_datafile = json.load(fd)
+                for participant in json_datafile:
+                    participants.append(participant)
+
+    full_database_file = experiment_dir / "full_database.json"
+    json.dump(participants, open(full_database_file, "w"), indent=4)
+    df = pd.json_normalize(
+        participants,
+        record_path=["session", "trials", "questionnaire", "answers"],
+        meta=[
+            "participant_id",
+            "age",
+            "gender",
+            "group",
+            "ai_usage",
+            ["session", "label"],
+            ["session", "mode"],
+
+            # trial-level fields
+            ["session", "trials", "duration"],
+            ["session", "trials", "nb_prompts"],
+            ["session", "trials", "goal_slot"],
+            ["session", "trials", "goal_value"],
+        ],
+        errors="ignore"
+    )
+    df = df.rename(columns={
+        0: "question",
+        1: "answer"
+    })
+
+    df.to_csv(experiment_dir / "full_database.csv", index=False)
