@@ -389,3 +389,29 @@ def data_prep(
     })
 
     df.to_csv(experiment_dir / "full_database.csv", index=False)
+
+
+
+REVERSED_QUESTIONS = (4, 5)
+GAAIS_QUESTIONS = range(1, 6)
+GODSPEED_QUESTIONS = range(6, 11)
+
+
+@app.command(name="data-scores", help="Flips the reversed questions and computes the scores per participant and system")
+def data_scores(
+    experiment_dir: Annotated[Path, typer.Option(help="Path to the experiment directory.")] = get_root() / "data" / "experiment",
+) -> None:
+    df = pd.read_csv(experiment_dir / "full_database.csv")
+    reversed_rows = df["question"].isin(REVERSED_QUESTIONS)
+    df.loc[reversed_rows, "answer"] = 6 - df.loc[reversed_rows, "answer"]
+
+    participant = ["participant_id", "age", "gender", "group", "ai_usage", "session.label", "session.mode"]
+    answers = (df.pivot(index=participant, columns="question", values="answer")
+               .add_prefix("q").rename_axis(columns=None))
+    scores = answers.assign(
+        gaais_score=answers[[f"q{question}" for question in GAAIS_QUESTIONS]].mean(axis=1),
+        godspeed_score=answers[[f"q{question}" for question in GODSPEED_QUESTIONS]].mean(axis=1),
+        score=answers.mean(axis=1),
+    ).reset_index()
+
+    scores.to_csv(experiment_dir / "scores.csv", index=False)
