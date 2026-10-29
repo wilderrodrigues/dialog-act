@@ -782,5 +782,201 @@
     "ai_usage": 5,
     "test": false,
     "completed_at": "2026-10-27T10:59:46.128560Z"
+  },
+  {
+    "age": 25,
+    "gender": "male",
+    "session": {
+      "mode": "eager",
+      "trials": [
+        {
+          "duration": 114,
+          "nb_resets": 0,
+          "nb_prompts": 4,
+          "food_type": "portuguese",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "north",
+          "restaurant": "nandos",
+          "started_at": "2026-10-29T11:59:04.706000Z"
+        },
+        {
+          "duration": 302,
+          "nb_resets": 0,
+          "nb_prompts": 11,
+          "food_type": "italian",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "moderate",
+          "restaurant": "pizza hut cherry hinton",
+          "started_at": "2026-10-29T12:01:05.587000Z"
+        },
+        {
+          "duration": 137,
+          "nb_resets": 0,
+          "nb_prompts": 7,
+          "food_type": "french",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                4,
+                4
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                2
+              ],
+              [
+                7,
+                4
+              ],
+              [
+                8,
+                4
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                2
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "french",
+          "restaurant": "restaurant two two",
+          "started_at": "2026-10-29T12:06:13.472000Z"
+        }
+      ],
+      "label": "System A",
+      "order": 1
+    },
+    "participant_id": "a7262248-bbec-40a9-8345-e6a4695b2947",
+    "researcher": "Remy",
+    "person": 5,
+    "group": "A",
+    "ai_usage": 4,
+    "test": false,
+    "completed_at": "2026-10-29T12:10:22.472963Z"
+  },
+  {
+    "age": 25,
+    "gender": "male",
+    "session": {
+      "mode": "patient",
+      "trials": [
+        {
+          "duration": 237,
+          "nb_resets": 0,
+          "nb_prompts": 15,
+          "food_type": "",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "area",
+          "goal_value": "west",
+          "restaurant": null,
+          "started_at": "2026-10-29T12:10:22.498000Z"
+        },
+        {
+          "duration": 74,
+          "nb_resets": 0,
+          "nb_prompts": 5,
+          "food_type": "",
+          "questionnaire": {
+            "answers": []
+          },
+          "goal_slot": "pricerange",
+          "goal_value": "cheap",
+          "restaurant": null,
+          "started_at": "2026-10-29T12:14:22.405000Z"
+        },
+        {
+          "duration": 83,
+          "nb_resets": 0,
+          "nb_prompts": 6,
+          "food_type": "",
+          "questionnaire": {
+            "answers": [
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                5,
+                3
+              ],
+              [
+                6,
+                3
+              ],
+              [
+                7,
+                4
+              ],
+              [
+                8,
+                4
+              ],
+              [
+                9,
+                3
+              ],
+              [
+                10,
+                3
+              ]
+            ]
+          },
+          "goal_slot": "food",
+          "goal_value": "italian",
+          "restaurant": null,
+          "started_at": "2026-10-29T12:15:38.930000Z"
+        }
+      ],
+      "label": "System B",
+      "order": 2
+    },
+    "participant_id": "a7262248-bbec-40a9-8345-e6a4695b2947",
+    "researcher": "Remy",
+    "person": 5,
+    "group": "A",
+    "ai_usage": 4,
+    "test": false,
+    "completed_at": "2026-10-29T12:17:48.215831Z"
   }
 ]
