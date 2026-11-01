@@ -10,6 +10,7 @@ import pickle
 import time
 
 import pandas as pd
+from scipy.stats import ttest_rel
 
 from uu import get_root
 from uu.msc.ai.mair.dialog.core.datasets import DialogActsDataset, DatasetFactory
@@ -35,6 +36,7 @@ import typer
 
 from uu.msc.ai.mair.recommender.core.inference_engine import LogRegPredictor
 from uu.msc.ai.mair.recommender.core.storage.persistent import ExperimentData
+from uu.msc.ai.mair.utils.plot import means, modes, genres, density, ai_usage_correlation
 
 app = typer.Typer(no_args_is_help=True, help="Dialog: Methods in AI Research.")
 logging.basicConfig(level=logging.INFO)
@@ -391,16 +393,14 @@ def data_prep(
     df.to_csv(experiment_dir / "full_database.csv", index=False)
 
 
-
-REVERSED_QUESTIONS = (4, 5)
-GAAIS_QUESTIONS = range(1, 6)
-GODSPEED_QUESTIONS = range(6, 11)
-
-
 @app.command(name="data-scores", help="Flips the reversed questions and computes the scores per participant and system")
 def data_scores(
     experiment_dir: Annotated[Path, typer.Option(help="Path to the experiment directory.")] = get_root() / "data" / "experiment",
 ) -> None:
+    REVERSED_QUESTIONS = (4, 5)
+    GAAIS_QUESTIONS = range(1, 6)
+    GODSPEED_QUESTIONS = range(6, 11)
+
     df = pd.read_csv(experiment_dir / "full_database.csv")
     reversed_rows = df["question"].isin(REVERSED_QUESTIONS)
     df.loc[reversed_rows, "answer"] = 6 - df.loc[reversed_rows, "answer"]
@@ -415,3 +415,68 @@ def data_scores(
     ).reset_index()
 
     scores.to_csv(experiment_dir / "scores.csv", index=False)
+
+
+@app.command(name="plots", help="Command used to plot the graphs.")
+def plots(experiment_dir: Annotated[Path, typer.Option(help="Path to the experiment directory.")] = get_root() / "data" / "experiment",) -> None:
+    df = pd.read_csv(experiment_dir / "scores.csv")
+    means(df)
+    modes(df)
+    genres(df)
+    density(df, score="gaais_score", title="GAAIS Score")
+    density(df, score="godspeed_score", title="GSQ Score")
+    ai_usage_correlation(df, score="gaais_score", title="GAAIS Score")
+    ai_usage_correlation(df, score="godspeed_score", title="GSQ Score")
+
+
+@app.command(name="t-test", help="Runs a paired t-test on the collected data.")
+def t_test(experiment_dir: Annotated[Path, typer.Option(help="Path to the experiment directory.")] = get_root() / "data" / "experiment",
+           score: Annotated[str, typer.Option(help="Quetionnaire score column. It is either 'gaais_score' or 'godspeed_score'.")] = "gaais_score",) -> None:
+    if score not in ["gaais_score", "godspeed_score"]:
+        raise ValueError("Score must be either 'gaais_score' or 'godspeed_score'")
+
+    df = pd.read_csv(experiment_dir / "scores.csv")
+
+    # One row per participant, columns = System A / System B
+    paired = df.pivot_table(
+        index="participant_id",
+        columns="session.mode",
+        values=score,
+        aggfunc="mean"
+    )
+
+    # Only participants who completed both systems
+    paired = paired[["patient", "eager"]].dropna()
+
+    treatment_patient = paired["patient"]
+    treatment_eager = paired["eager"]
+
+    # Difference: positive means System A wins
+    diff = treatment_patient - treatment_eager
+
+    # Two-sided test
+    two_sided = ttest_rel(
+        treatment_patient,
+        treatment_eager
+    )
+
+    # Directional hypothesis: System A > System B
+    one_sided = ttest_rel(
+        treatment_patient,
+        treatment_eager,
+        alternative="greater"
+    )
+
+    # Paired Cohen's d (dz)
+    cohens_dz = diff.mean() / diff.std(ddof=1)
+
+    print(f"\n{score}")
+    print("-" * 40)
+    print(f"N              = {len(paired)}")
+    print(f"Treatment Patient mean  = {treatment_patient.mean():.3f}")
+    print(f"Treatment Eager mean  = {treatment_eager.mean():.3f}")
+    print(f"Mean difference= {diff.mean():.3f}")
+    print(f"t              = {two_sided.statistic:.3f}")
+    print(f"p (two-sided)  = {two_sided.pvalue:.4f}")
+    print(f"p (A > B)      = {one_sided.pvalue:.4f}")
+    print(f"Cohen's dz     = {cohens_dz:.3f}")
