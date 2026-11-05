@@ -2,125 +2,105 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
 import pandas as pd
 
 
-# path to the csv 
+# Default input file; a different CSV can be supplied as a command-line argument.
 DEFAULT_DATA_PATH = (
     Path(__file__).resolve().parents[6] / "data" / "experiment" / "full_database.csv"
 )
-# Questions 1–5 measure GAAIS; questions 6–10 measure GSQ.
-GAAIS_QUESTIONS = {1, 2, 3, 4, 5}
-GSQ_QUESTIONS = {6, 7, 8, 9, 10}
-# Keep the mode order consistent in the plots and printed summaries.
-MODES = ["eager", "patient"]
+# These are the question IDs used by each questionnaire in the source CSV.
+QUESTIONNAIRES = {
+    "GAAIS": (1, 2, 3, 4, 5),
+    "GSQ": (6, 7, 8, 9, 10),
+}
 
 
-def plot_question_scores(
-    data: pd.DataFrame,
-    questions: set[int],
-    title: str,
-    reverse_questions: set[int] | None = None,
-) -> None:
-    """Plot answer distributions for selected questions, grouped by mode."""
-    # Sorting ensures questions appear in numerical order on the x-axis.
-    question_order = sorted(questions)
-    # Keep only the selected questions and the two experiment modes.
-    scores = data[
-        data["question"].isin(questions) & data["session.mode"].isin(MODES)
+def calculate_participant_differences(data: pd.DataFrame) -> pd.DataFrame:
+    """Return one patient-minus-eager mean difference per questionnaire and participant."""
+    # Keep only survey answers used in the two questionnaires and the two relevant modes.
+    questions = [question for group in QUESTIONNAIRES.values() for question in group]
+    data = data.loc[
+        data["question"].isin(questions)
+        & data["session.mode"].str.lower().isin(["eager", "patient"]),
+        ["participant_id", "question", "answer", "session.mode"],
     ].copy()
 
-    # Reverse selected 1–5 Likert items so higher values consistently mean better scores.
-    reverse_questions = reverse_questions or set()
-    reverse_scored = scores["question"].isin(reverse_questions)
-    scores.loc[reverse_scored, "answer"] = 6 - scores.loc[
-        reverse_scored, "answer"
-    ]
+    # Convert the IDs and scores to numbers, and match mode names regardless of case.
+    data["question"] = pd.to_numeric(data["question"], errors="raise")
+    data["answer"] = pd.to_numeric(data["answer"], errors="raise")
+    data["session.mode"] = data["session.mode"].str.lower()
 
-    # Print the number of answers in each question/mode group to show sample sizes.
-    print(f"Number of scores per question and mode ({title}):")
-    print(
-        scores.groupby(["question", "session.mode"])["answer"]
-        .count()
-        .unstack(fill_value=0)
-        .reindex(index=question_order, columns=MODES, fill_value=0)
-        .to_string()
+    # Reverse-score GAAIS items 4 and 5 on the 1–5 scale before comparing the modes.
+    reversed_items = data["question"].isin([4, 5])
+    data.loc[reversed_items, "answer"] = 6 - data.loc[reversed_items, "answer"]
+
+    # Place both mode answers side by side for each participant and question.
+    answers = data.pivot(
+        index=["participant_id", "question"], columns="session.mode", values="answer"
+    ).reindex(columns=["eager", "patient"])
+
+    # Subtract eager from patient for each question, yielding one row per participant.
+    differences = (answers["patient"] - answers["eager"]).unstack("question").reindex(
+        columns=questions
     )
 
-    # Offset the mode distributions slightly so both violins are visible per question.
-    fig, ax = plt.subplots(figsize=(10, 6))
-    colors = {"eager": "tab:blue", "patient": "tab:orange"}
-    offsets = {"eager": -0.2, "patient": 0.2}
-
-    # Draw one violin per question and mode using the individual raw answers.
-    for question in question_order:
-        for mode in MODES:
-            values = scores.loc[
-                (scores["question"] == question)
-                & (scores["session.mode"] == mode),
-                "answer",
-            ].tolist()
-            if not values:
-                continue
-
-            # Display the mode distributions side by side for this question.
-            position = question + offsets[mode]
-            violin = ax.violinplot(
-                [values],
-                positions=[position],
-                widths=0.35,
-                showmedians=True,
-                showextrema=False,
+    # Average the five question differences; require all five paired answers per scale.
+    return pd.DataFrame(
+        {
+            name: differences[list(items)].mean(axis=1).where(
+                differences[list(items)].notna().all(axis=1)
             )
-            violin["bodies"][0].set_facecolor(colors[mode])
-            violin["bodies"][0].set_edgecolor(colors[mode])
-            violin["bodies"][0].set_alpha(0.55)
+            for name, items in QUESTIONNAIRES.items()
+        }
+    ).dropna()
 
-            # Add jittered points so individual answers remain visible.
-            jittered_positions = [
-                position + ((index % 7) - 3) * 0.015
-                for index in range(len(values))
-            ]
-            ax.scatter(jittered_positions, values, color=colors[mode], s=12, alpha=0.7)
 
-    # Label the axes and mark every possible value on the 1–5 response scale.
-    ax.set_xlabel(f"{title} question")
-    ax.set_ylabel("Score (1–5)")
-    ax.set_title(f"Scores per {title} question and mode")
-    ax.set_xticks(question_order)
-    ax.set_yticks(range(1, 6))
-    ax.set_ylim(0.5, 5.5)
-    ax.legend(
-        handles=[Patch(facecolor=colors[mode], label=mode.title()) for mode in MODES],
-        title="Mode",
+def plot_participant_differences(scores: pd.DataFrame) -> None:
+    """Draw one violin per questionnaire from the participant-level differences."""
+    fig, ax = plt.subplots(figsize=(8, 6))
+    colors = {"GAAIS": "tab:blue", "GSQ": "tab:orange"}
+
+    # Keep the x-axis order consistent with QUESTIONNAIRES: GAAIS, then GSQ.
+    names = list(QUESTIONNAIRES)
+    violins = ax.violinplot(
+        # Each list holds one mean difference per participant, not individual answers.
+        [scores[name].tolist() for name in names],
+        positions=[1, 2],
+        widths=0.65,
+        showmedians=True,
+        showextrema=False,
     )
+    # Color each violin to distinguish the two questionnaires.
+    for body, name in zip(violins["bodies"], names):
+        body.set_facecolor(colors[name])
+        body.set_edgecolor(colors[name])
+        body.set_alpha(0.55)
+
+    # Zero means no difference between modes; positive values mean patient scored higher.
+    ax.axhline(0, color="black", linestyle="--", linewidth=1)
+    ax.set_xticks([1, 2], names)
+    ax.set_ylabel("Mean score difference")
+    ax.set_title("GAAIS and GSQ score differences per participant\n(patient − eager)")
+    # With a 1–5 response scale, the difference range is -4 to +4.
+    ax.set_yticks(range(-4, 5))
+    ax.set_ylim(-4.2, 4.2)
     ax.grid(axis="y", alpha=0.3)
     fig.tight_layout()
 
 
 def main() -> None:
-    # Accept an optional CSV path; otherwise use the project's default data file.
+    # Use a provided CSV path, or fall back to the project's experiment data.
     data_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_DATA_PATH
-    # Detect the delimiter so comma- and semicolon-separated CSV files both work.
+    # Detect the delimiter so comma- and semicolon-separated CSVs both work.
     data = pd.read_csv(data_path, sep=None, engine="python")
+    participant_scores = calculate_participant_differences(data)
+    if participant_scores.empty:
+        raise ValueError("No participants have complete paired answers for both questionnaires.")
 
-    # Convert the data columns to comparable numeric and lowercase values.
-    data["question"] = pd.to_numeric(data["question"], errors="raise")
-    data["answer"] = pd.to_numeric(data["answer"], errors="raise")
-    data["session.mode"] = data["session.mode"].str.lower()
-
-    # Reverse-score GAAIS questions 4 and 5; leave all GSQ answers unchanged.
-    plot_question_scores(
-        data,
-        GAAIS_QUESTIONS,
-        "GAAIS",
-        reverse_questions={4, 5},
-    )
-    plot_question_scores(data, GSQ_QUESTIONS, "GSQ")
+    plot_participant_differences(participant_scores)
     plt.show()
 
 
-# Run the plots only when this file is executed directly.
 if __name__ == "__main__":
     main()
