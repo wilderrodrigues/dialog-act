@@ -77,6 +77,12 @@ def plot_participant_differences(scores: pd.DataFrame) -> None:
         body.set_edgecolor(colors[name])
         body.set_alpha(0.55)
 
+    # Show each participant's score as a dot; slight horizontal offsets prevent overlap.
+    for position, name in enumerate(names, start=1):
+        values = scores[name].tolist()
+        offsets = [position + ((index % 7) - 3) * 0.025 for index in range(len(values))]
+        ax.scatter(offsets, values, color=colors[name], s=22, alpha=0.8, zorder=3)
+
     # Zero means no difference between modes; positive values mean patient scored higher.
     ax.axhline(0, color="black", linestyle="--", linewidth=1)
     ax.set_xticks([1, 2], names)
