@@ -10,7 +10,7 @@ import pickle
 import time
 
 import pandas as pd
-from scipy.stats import ttest_rel
+from scipy.stats import iqr, rankdata, shapiro, wilcoxon
 
 from uu import get_root
 from uu.msc.ai.mair.dialog.core.datasets import DialogActsDataset, DatasetFactory
@@ -429,15 +429,11 @@ def plots(experiment_dir: Annotated[Path, typer.Option(help="Path to the experim
     ai_usage_correlation(df, score="godspeed_score", title="GSQ Score")
 
 
-@app.command(name="t-test", help="Runs a paired t-test on the collected data.")
-def t_test(experiment_dir: Annotated[Path, typer.Option(help="Path to the experiment directory.")] = get_root() / "data" / "experiment",
+@app.command(name="wilcoxon", help="Runs a Wilcoxon signed-rank test on the collected data.")
+def wilcoxon_test(experiment_dir: Annotated[Path, typer.Option(help="Path to the experiment directory.")] = get_root() / "data" / "experiment",
            score: Annotated[str, typer.Option(help="Quetionnaire score column. It is either 'gaais_score' or 'godspeed_score'.")] = "gaais_score",) -> None:
-    if score not in ["gaais_score", "godspeed_score"]:
-        raise ValueError("Score must be either 'gaais_score' or 'godspeed_score'")
-
     df = pd.read_csv(experiment_dir / "scores.csv")
 
-    # One row per participant, columns = System A / System B
     paired = df.pivot_table(
         index="participant_id",
         columns="session.mode",
@@ -445,38 +441,39 @@ def t_test(experiment_dir: Annotated[Path, typer.Option(help="Path to the experi
         aggfunc="mean"
     )
 
-    # Only participants who completed both systems
     paired = paired[["patient", "eager"]].dropna()
 
     treatment_patient = paired["patient"]
     treatment_eager = paired["eager"]
 
-    # Difference: positive means System A wins
     diff = treatment_patient - treatment_eager
 
-    # Two-sided test
-    two_sided = ttest_rel(
+    normality = shapiro(diff)
+
+    two_sided = wilcoxon(
         treatment_patient,
         treatment_eager
     )
 
-    # Directional hypothesis: System A > System B
-    one_sided = ttest_rel(
+    one_sided = wilcoxon(
         treatment_patient,
         treatment_eager,
         alternative="greater"
     )
 
-    # Paired Cohen's d (dz)
-    cohens_dz = diff.mean() / diff.std(ddof=1)
+    nonzero = diff[diff != 0]
+    ranks = rankdata(nonzero.abs())
+    positive_ranks, negative_ranks = ranks[nonzero > 0].sum(), ranks[nonzero < 0].sum()
+    rank_biserial = (positive_ranks - negative_ranks) / ranks.sum()
 
     print(f"\n{score}")
     print("-" * 40)
-    print(f"N              = {len(paired)}")
-    print(f"Treatment Patient mean  = {treatment_patient.mean():.3f}")
-    print(f"Treatment Eager mean  = {treatment_eager.mean():.3f}")
-    print(f"Mean difference= {diff.mean():.3f}")
-    print(f"t              = {two_sided.statistic:.3f}")
+    print(f"N              = {len(paired)} ({len(nonzero)} non-zero differences)")
+    print(f"Shapiro-Wilk   = W {normality.statistic:.3f}, p {normality.pvalue:.4f}")
+    print(f"Patient median = {treatment_patient.median():.3f} (IQR {iqr(treatment_patient):.3f})")
+    print(f"Eager median   = {treatment_eager.median():.3f} (IQR {iqr(treatment_eager):.3f})")
+    print(f"Median diff    = {diff.median():.3f}")
+    print(f"W              = {two_sided.statistic:.1f}")
     print(f"p (two-sided)  = {two_sided.pvalue:.4f}")
-    print(f"p (A > B)      = {one_sided.pvalue:.4f}")
-    print(f"Cohen's dz     = {cohens_dz:.3f}")
+    print(f"p (P > E)      = {one_sided.pvalue:.4f}")
+    print(f"Rank-biserial r= {rank_biserial:.3f}")
